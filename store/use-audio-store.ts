@@ -17,43 +17,91 @@ const KOKORO_DEFAULT_URL = 'http://localhost:8880';
 
 interface AudioStore extends AudioState {
   audioCache: Map<string, Blob>;
+  hydrated: boolean;
+  hydrate: () => void;
 }
 
 export const useAudioStore = create<AudioStore>((set, get) => ({
   segments: [],
   currentSegmentIndex: 0,
   playbackStatus: 'idle',
-  selectedVoice: typeof window !== 'undefined' ? (localStorage.getItem('selectedVoice') ?? null) : null,
+  selectedVoice: null,
   audioCache: new Map(),
   file: null,
+  documentTitle: null,
+
+  // Speed
+  playbackSpeed: 1.0,
 
   // TTS engine
-  ttsEngine: (typeof window !== 'undefined' ? (localStorage.getItem('ttsEngine') as TtsEngine) ?? 'browser' : 'browser') as TtsEngine,
-  kokoroVoice: typeof window !== 'undefined' ? (localStorage.getItem('kokoroVoice') ?? 'af_heart') : 'af_heart',
+  ttsEngine: 'browser',
+  kokoroVoice: 'af_heart',
   kokoroSpeed: 1.0,
-  kokoroServerUrl: typeof window !== 'undefined' ? (localStorage.getItem('kokoroServerUrl') ?? KOKORO_DEFAULT_URL) : KOKORO_DEFAULT_URL,
+  kokoroServerUrl: KOKORO_DEFAULT_URL,
 
-  setFile: (file: File | null) => set({ file }),
+  // These fields hold client-only persisted values (localStorage). They must
+  // start with server-safe defaults above and get filled in here after mount
+  // to avoid SSR/client hydration mismatches.
+  hydrated: false,
+  hydrate: () => {
+    if (typeof window === 'undefined' || get().hydrated) return;
+
+    const savedSpeedRaw = localStorage.getItem('playbackSpeed');
+    let savedSpeed = 1.0;
+    if (savedSpeedRaw) {
+      const parsed = parseFloat(savedSpeedRaw);
+      if (!isNaN(parsed) && parsed >= 0.5 && parsed <= 3.0) savedSpeed = parsed;
+    }
+
+    set({
+      hydrated: true,
+      selectedVoice: localStorage.getItem('selectedVoice') ?? null,
+      playbackSpeed: savedSpeed,
+      kokoroSpeed: savedSpeed,
+      ttsEngine: (localStorage.getItem('ttsEngine') as TtsEngine) ?? 'browser',
+      kokoroVoice: localStorage.getItem('kokoroVoice') ?? 'af_heart',
+      kokoroServerUrl: localStorage.getItem('kokoroServerUrl') ?? KOKORO_DEFAULT_URL,
+    });
+  },
+
+  setFile: (file: File | null) => set({
+    file,
+    documentTitle: file ? file.name : null,
+  }),
+
+  setDocumentTitle: (title: string | null) => set({ documentTitle: title }),
+
+  setPlaybackSpeed: (speed: number) => {
+    if (typeof window !== 'undefined') {
+      try { localStorage.setItem('playbackSpeed', speed.toString()); } catch {}
+    }
+    set({ playbackSpeed: speed, kokoroSpeed: speed });
+  },
 
   setTtsEngine: (engine: TtsEngine) => {
     if (typeof window !== 'undefined') {
-      localStorage.setItem('ttsEngine', engine);
+      try { localStorage.setItem('ttsEngine', engine); } catch {}
     }
     set({ ttsEngine: engine });
   },
 
   setKokoroVoice: (voice: string) => {
     if (typeof window !== 'undefined') {
-      localStorage.setItem('kokoroVoice', voice);
+      try { localStorage.setItem('kokoroVoice', voice); } catch {}
     }
     set({ kokoroVoice: voice });
   },
 
-  setKokoroSpeed: (speed: number) => set({ kokoroSpeed: speed }),
+  setKokoroSpeed: (speed: number) => {
+    if (typeof window !== 'undefined') {
+      try { localStorage.setItem('playbackSpeed', speed.toString()); } catch {}
+    }
+    set({ kokoroSpeed: speed, playbackSpeed: speed });
+  },
 
   setKokoroServerUrl: (url: string) => {
     if (typeof window !== 'undefined') {
-      localStorage.setItem('kokoroServerUrl', url);
+      try { localStorage.setItem('kokoroServerUrl', url); } catch {}
     }
     set({ kokoroServerUrl: url });
   },
@@ -67,14 +115,20 @@ export const useAudioStore = create<AudioStore>((set, get) => ({
 
   setPlaybackStatus: (status) => set({ playbackStatus: status }),
 
-  loadSegments: (segments: TextSegment[]) => set({ segments, currentSegmentIndex: 0, playbackStatus: 'idle' }),
+  loadSegments: (segments: TextSegment[]) =>
+    set({ segments, currentSegmentIndex: 0, playbackStatus: 'idle' }),
+
+  updateSegmentsWithoutReset: (segments: TextSegment[]) =>
+    set(state => ({
+      segments,
+      currentSegmentIndex: Math.min(state.currentSegmentIndex, Math.max(0, segments.length - 1)),
+    })),
 
   playSegment: async (index: number) => {
     const { segments, ttsEngine, audioCache, kokoroVoice, kokoroSpeed, kokoroServerUrl } = get();
     if (index < 0 || index >= segments.length) return;
 
-    // Stop any ongoing playback immediately
-    set({ playbackStatus: 'paused' });
+    // Transition to loading while preparing audio
     set({ currentSegmentIndex: index, playbackStatus: 'loading' });
 
     const segment = segments[index];
@@ -124,7 +178,6 @@ export const useAudioStore = create<AudioStore>((set, get) => ({
           });
         } catch (error) {
           console.error('Kokoro TTS error, falling back to browser TTS:', error);
-          // Fall through — AudioEngine will use browser TTS since no blob is cached
         }
       }
 
@@ -157,6 +210,10 @@ export const useAudioStore = create<AudioStore>((set, get) => ({
 
   resume: () => {
     set({ playbackStatus: 'playing' });
+  },
+
+  stop: () => {
+    set({ playbackStatus: 'idle', currentSegmentIndex: 0 });
   },
 
   prefetchSegment: async (index: number) => {
@@ -207,6 +264,7 @@ export const useAudioStore = create<AudioStore>((set, get) => ({
   // PDF zoom state (shared)
   scale: 1.5,
   setScale: (s: number) => set({ scale: s }),
-  zoomIn: () => set(state => ({ scale: Math.min(4, +(state.scale * 1.2).toFixed(3)) })),
-  zoomOut: () => set(state => ({ scale: Math.max(0.2, +(state.scale / 1.2).toFixed(3)) })),
+  zoomIn: () => set(state => ({ scale: Math.min(3.5, +(state.scale * 1.2).toFixed(2)) })),
+  zoomOut: () => set(state => ({ scale: Math.max(0.5, +(state.scale / 1.2).toFixed(2)) })),
+  zoomReset: () => set({ scale: 1.5 }),
 }));

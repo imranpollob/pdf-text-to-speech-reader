@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://imranpollob.github.io/pdf-text-to-speech-reader/sitemap.xml
+

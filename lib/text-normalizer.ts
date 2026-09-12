@@ -1,14 +1,19 @@
 import { TextSegment } from '@/types';
 
-interface ScrapedTextItem {
-  str: string;
-  dir: string;
-  width: number;
-  height: number;
-  transform: number[];
-  fontName: string;
-  hasEOL: boolean;
-  domElementId?: string;
+const ABBREVIATIONS = new Set([
+  'mr', 'mrs', 'ms', 'dr', 'prof', 'sr', 'jr', 'vs', 'etc', 'eg', 'ie', 'inc', 'ltd', 'corp', 'no', 'st', 'co', 'dept', 'univ', 'approx'
+]);
+
+/**
+ * Check if the dot at position `i` belongs to an abbreviation (e.g., Dr., vs., etc.)
+ */
+function isAbbreviationDot(chars: string[], i: number): boolean {
+  let wordStart = i - 1;
+  while (wordStart >= 0 && /[a-zA-Z]/.test(chars[wordStart])) {
+    wordStart--;
+  }
+  const word = chars.slice(wordStart + 1, i).join('').toLowerCase();
+  return ABBREVIATIONS.has(word);
 }
 
 /**
@@ -17,13 +22,17 @@ interface ScrapedTextItem {
  * split on punctuation boundaries while keeping per-span fragments so
  * sentences that share a single PDF span can still be wrapped separately.
  */
-export function normalizeText(textItems: any[], pageIndex: number): TextSegment[] {
+export function normalizeText(
+  textItems: unknown[],
+  pageIndex: number
+): TextSegment[] {
   const fullTextChars: string[] = [];
   const charToSpanMap: { spanId: string }[] = [];
   const spanTextMap: Map<string, string[]> = new Map();
 
   textItems.forEach((item, idx) => {
-    const raw = typeof item?.str === 'string' ? item.str : '';
+    const textItem = item as { str?: string; hasEOL?: boolean } | null;
+    const raw = typeof textItem?.str === 'string' ? textItem.str : '';
     if (raw.length === 0) return;
 
     const spanId = `page-${pageIndex}-span-${idx}`;
@@ -42,7 +51,7 @@ export function normalizeText(textItems: any[], pageIndex: number): TextSegment[
     const endsWithWhitespace = /\s$/.test(raw);
     const endsWithHyphen = raw.endsWith('-');
 
-    if (item.hasEOL) {
+    if (textItem?.hasEOL) {
       fullTextChars.push('\n');
       charToSpanMap.push({ spanId: 'EOL' });
     } else if (!endsWithWhitespace && !endsWithHyphen) {
@@ -113,14 +122,15 @@ export function normalizeText(textItems: any[], pageIndex: number): TextSegment[
     const ch = fullTextChars[i];
     let isSentenceEnd = /[.!:?]/.test(ch);
 
-    // If this is a period and it sits between two digits (e.g. 0.2,
-    // 123.456) treat it as part of a numeric literal rather than a
-    // sentence terminator so we don't split decimals into two
-    // sentences.
+    // If this is a period:
+    // 1. Don't split decimals (e.g., 3.14)
+    // 2. Don't split common abbreviations (e.g., Dr., vs., etc.)
     if (isSentenceEnd && ch === '.') {
       const prev = i > 0 ? fullTextChars[i - 1] : '';
       const next = i + 1 < fullTextChars.length ? fullTextChars[i + 1] : '';
       if (/\d/.test(prev) && /\d/.test(next)) {
+        isSentenceEnd = false;
+      } else if (isAbbreviationDot(fullTextChars, i)) {
         isSentenceEnd = false;
       }
     }
@@ -169,11 +179,13 @@ export function normalizeRawText(text: string): TextSegment[] {
     const ch = chars[i];
     let isSentenceEnd = /[.!?:]/.test(ch);
 
-    // Don't split on decimal numbers (e.g. 3.14)
+    // Don't split on decimal numbers (e.g. 3.14) or abbreviations
     if (isSentenceEnd && ch === '.') {
       const prev = i > 0 ? chars[i - 1] : '';
       const next = i + 1 < chars.length ? chars[i + 1] : '';
       if (/\d/.test(prev) && /\d/.test(next)) {
+        isSentenceEnd = false;
+      } else if (isAbbreviationDot(chars, i)) {
         isSentenceEnd = false;
       }
     }

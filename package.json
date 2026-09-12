@@ -1,5 +1,5 @@
 {
-  "name": "document-echo",
+  "name": "pdf-text-to-speech-reader",
   "version": "1.0.0",
   "description": "A PDF reader with text-to-speech capabilities",
   "author": "Imran Pollob",
@@ -8,24 +8,26 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "build:gh": "NEXT_PUBLIC_BASE_PATH=/pdf-text-to-speech-reader next build",
     "start": "next start",
     "lint": "eslint"
   },
   "dependencies": {
-    "idb-keyval": "^6.2.2",
-    "next": "16.0.7",
-    "pdfjs-dist": "^5.4.449",
-    "react": "19.2.0",
-    "react-dom": "19.2.0",
-    "zustand": "^5.0.9"
+    "idb-keyval": "^6.3.0",
+    "next": "16.3.5",
+    "pdfjs-dist": "5.4.449",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "zustand": "^5.0.15"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "baseline-browser-mapping": "^2.11.22",
     "eslint": "^9",
-    "eslint-config-next": "16.0.7",
+    "eslint-config-next": "16.3.5",
     "tailwindcss": "^4",
     "typescript": "^5"
   }

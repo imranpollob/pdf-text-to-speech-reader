@@ -18,6 +18,10 @@ export interface AudioState {
   playbackStatus: 'idle' | 'loading' | 'playing' | 'paused';
   selectedVoice: string | null; // For browser TTS
   file: File | null;
+  documentTitle: string | null;
+
+  // Universal playback rate (0.75x to 2x)
+  playbackSpeed: number;
 
   // TTS engine
   ttsEngine: TtsEngine;
@@ -30,15 +34,19 @@ export interface AudioState {
   setScale: (scale: number) => void;
   zoomIn: () => void;
   zoomOut: () => void;
+  zoomReset: () => void;
 
   // Actions
   setFile: (file: File | null) => void;
+  setDocumentTitle: (title: string | null) => void;
+  setPlaybackSpeed: (speed: number) => void;
   setTtsEngine: (engine: TtsEngine) => void;
   setKokoroVoice: (voice: string) => void;
   setKokoroSpeed: (speed: number) => void;
   setKokoroServerUrl: (url: string) => void;
   setSelectedVoice: (voiceURI: string) => void;
   loadSegments: (segments: TextSegment[]) => void;
+  updateSegmentsWithoutReset: (segments: TextSegment[]) => void;
   playSegment: (index: number) => Promise<void>;
   prefetchSegment: (index: number) => Promise<void>;
 
@@ -46,6 +54,7 @@ export interface AudioState {
   play: () => void;
   pause: () => void;
   resume: () => void;
+  stop: () => void;
   next: () => void;
   setPlaybackStatus: (status: 'idle' | 'loading' | 'playing' | 'paused') => void;
 }

@@ -2,16 +2,15 @@
 
 import { useEffect, useRef, useState } from 'react';
 import * as pdfjsLib from 'pdfjs-dist';
-// Import TextLayerBuilder from web/pdf_viewer.mjs (explicit path)
-// @ts-ignore
 import { TextLayerBuilder } from 'pdfjs-dist/web/pdf_viewer.mjs';
 import 'pdfjs-dist/web/pdf_viewer.css';
 import { normalizeText } from '../lib/text-normalizer';
 import { useAudioStore } from '../store/use-audio-store';
 import type { TextSegment } from '../types';
 
-// Set worker src
-pdfjsLib.GlobalWorkerOptions.workerSrc = `/pdf.worker.min.mjs`;
+// Set worker src dynamically with support for GitHub Pages subpaths
+const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '';
+pdfjsLib.GlobalWorkerOptions.workerSrc = `${basePath}/pdf.worker.min.mjs`;
 
 interface PdfViewerProps {
   file: File | null;
@@ -25,12 +24,11 @@ export const PdfViewer = ({ file }: PdfViewerProps) => {
 
   // Store actions
   const loadSegments = useAudioStore(state => state.loadSegments);
+  const updateSegmentsWithoutReset = useAudioStore(state => state.updateSegmentsWithoutReset);
   const playSegment = useAudioStore(state => state.playSegment);
   const storeSegments = useAudioStore(state => state.segments);
   const currentSegmentIndex = useAudioStore(state => state.currentSegmentIndex);
   const playbackStatus = useAudioStore(state => state.playbackStatus);
-
-  // Styles for sentence highlighting moved to app/globals.css
 
   // Load PDF document
   useEffect(() => {
@@ -52,18 +50,18 @@ export const PdfViewer = ({ file }: PdfViewerProps) => {
 
     loadPdf();
 
-    // Cleanup function to prevent duplicate renders
+    const currentContainer = containerRef.current;
     return () => {
-      if (containerRef.current) {
-        containerRef.current.innerHTML = '';
+      if (currentContainer) {
+        currentContainer.innerHTML = '';
       }
     };
   }, [file]);
 
-  // Wrap sentence fragments inside presentation spans (following naturalreader.html approach)
+  // Wrap sentence fragments inside presentation spans
   const tagSentencesInTextLayer = (
     textDivs: HTMLElement[],
-    textItems: any[],
+    textItems: unknown[],
     segments: TextSegment[],
     pageNumber: number,
     segmentOffset: number
@@ -80,12 +78,10 @@ export const PdfViewer = ({ file }: PdfViewerProps) => {
       });
     });
 
-
-
-    // Match generated spans to textItems (pdf.js generally aligns by index)
+    // Match generated spans to textItems
     let itemPtr = 0;
     textDivs.forEach((span) => {
-      while (itemPtr < textItems.length && textItems[itemPtr].str.length === 0) {
+      while (itemPtr < textItems.length && (((textItems[itemPtr] as { str?: string } | null)?.str?.length ?? 0) === 0)) {
         itemPtr++;
       }
 
@@ -98,19 +94,20 @@ export const PdfViewer = ({ file }: PdfViewerProps) => {
         if (fragments && fragments.length > 0) {
           span.textContent = '';
           fragments.forEach(fragment => {
-            if (fragment.text.trim().length === 0) return;
+            if (fragment.text.trim().length === 0) {
+              // Preserve leading/trailing whitespace between spans
+              span.appendChild(document.createTextNode(fragment.text));
+              return;
+            }
 
             const sentenceWrapper = document.createElement('nr-sentence');
-            sentenceWrapper.className = `nr-s${fragment.index}`;
+            sentenceWrapper.className = `nr-sentence nr-s${fragment.index}`;
             sentenceWrapper.setAttribute('data-na-sen-ind', fragment.index.toString());
             sentenceWrapper.setAttribute('data-na-page-ind', pageNumber.toString());
             sentenceWrapper.textContent = fragment.text;
 
             span.appendChild(sentenceWrapper);
           });
-        } else {
-          // Log spans that didn't get matched
-
         }
 
         itemPtr++;
@@ -132,6 +129,7 @@ export const PdfViewer = ({ file }: PdfViewerProps) => {
 
       const allSegments: TextSegment[] = [];
       let segmentOffset = 0;
+      const dpr = typeof window !== 'undefined' ? (window.devicePixelRatio || 1) : 1;
 
       // Render each page
       for (let pageNum = 1; pageNum <= pdfDocument.numPages; pageNum++) {
@@ -142,17 +140,21 @@ export const PdfViewer = ({ file }: PdfViewerProps) => {
 
         // Create page container
         const pageContainer = document.createElement('div');
-        pageContainer.className = 'pdf-page-container';
-        pageContainer.className = 'pdf-page-container styled-page-container';
+        pageContainer.className = 'relative mb-7 shadow-[0_6px_24px_rgba(0,0,0,0.12)] bg-white rounded overflow-hidden';
+        pageContainer.style.width = `${viewport.width}px`;
+        pageContainer.style.height = `${viewport.height}px`;
 
-        // Create canvas for the page
+        // Create high-DPI crisp canvas
         const canvas = document.createElement('canvas');
-        canvas.height = viewport.height;
-        canvas.width = viewport.width;
-        canvas.className = 'block pdf-canvas';
+        canvas.width = Math.floor(viewport.width * dpr);
+        canvas.height = Math.floor(viewport.height * dpr);
+        canvas.style.width = `${viewport.width}px`;
+        canvas.style.height = `${viewport.height}px`;
+        canvas.className = 'block pointer-events-none';
 
-        const context = canvas.getContext('2d');
+        const context = canvas.getContext('2d', { alpha: false });
         if (context) {
+          context.setTransform(dpr, 0, 0, dpr, 0, 0);
           await page.render({
             canvasContext: context,
             viewport: viewport,
@@ -170,6 +172,8 @@ export const PdfViewer = ({ file }: PdfViewerProps) => {
 
         const textLayerDiv = document.createElement('div');
         textLayerDiv.className = 'textLayer pdf-textLayer';
+        textLayerDiv.style.width = `${viewport.width}px`;
+        textLayerDiv.style.height = `${viewport.height}px`;
 
         const textLayer = new TextLayerBuilder({
           pdfPage: page,
@@ -180,24 +184,16 @@ export const PdfViewer = ({ file }: PdfViewerProps) => {
         if (isCancelled) return;
 
         if (textLayer.div) {
-          // Grab the generated spans. Some pdf.js versions expose textDivs; otherwise, query the DOM.
-          const textDivs = (textLayer as any).textDivs as HTMLElement[] | undefined;
-          const spans = textDivs && Array.isArray(textDivs)
-            ? textDivs
-            : Array.from(textLayer.div.querySelectorAll<HTMLElement>('span[role="presentation"]'));
+          const spans = Array.from(textLayer.div.querySelectorAll<HTMLElement>('span[role="presentation"]'));
 
-          // FIX: Convert pdf.js positioning to absolute pixels
-          // This ensures correct alignment during zoom, matching NaturalReader behavior
-          // Handles both percentage-based (legacy) and calc-based (modern) pdf.js output
+          // Convert positioning to exact pixels for zoom accuracy
           spans.forEach((span) => {
-            // Helper to parse 'calc(var(--scale) * 12.34px)' -> 12.34
             const getBaseValue = (style: string): number | null => {
               if (!style) return null;
               const match = style.match(/\*\s*([\d.]+)px/);
               return match ? parseFloat(match[1]) : null;
             };
 
-            // 1. Fix Position (Left)
             if (span.style.left.includes('calc')) {
               const base = getBaseValue(span.style.left);
               if (base !== null) span.style.left = `${base * viewport.scale}px`;
@@ -206,7 +202,6 @@ export const PdfViewer = ({ file }: PdfViewerProps) => {
               span.style.left = `${(leftPerc / 100) * viewport.width}px`;
             }
 
-            // 2. Fix Position (Top)
             if (span.style.top.includes('calc')) {
               const base = getBaseValue(span.style.top);
               if (base !== null) span.style.top = `${base * viewport.scale}px`;
@@ -215,7 +210,6 @@ export const PdfViewer = ({ file }: PdfViewerProps) => {
               span.style.top = `${(topPerc / 100) * viewport.height}px`;
             }
 
-            // 3. Fix Font Size
             const currentFontSize = span.style.fontSize;
             if (currentFontSize && currentFontSize.includes('calc')) {
               const base = getBaseValue(currentFontSize);
@@ -225,7 +219,6 @@ export const PdfViewer = ({ file }: PdfViewerProps) => {
 
           tagSentencesInTextLayer(spans, textContent.items, pageSegments, pageNum, segmentOffset);
 
-          // Ensure pointer events and stacking for hover/click
           textLayer.div.classList.add('pdf-textLayer-inner');
 
           spans.forEach(s => {
@@ -235,13 +228,9 @@ export const PdfViewer = ({ file }: PdfViewerProps) => {
             });
           });
 
-          // Copy children to our custom div (after tagging)
           while (textLayer.div.firstChild) {
             textLayerDiv.appendChild(textLayer.div.firstChild);
           }
-
-          const sentencesCount = textLayerDiv.querySelectorAll('nr-sentence').length;
-
 
           pageContainer.appendChild(textLayerDiv);
         }
@@ -254,7 +243,14 @@ export const PdfViewer = ({ file }: PdfViewerProps) => {
       }
 
       if (isCancelled) return;
-      loadSegments(allSegments);
+
+      // Crucial zoom continuity: If segments were already loaded, update segments without resetting playback!
+      const currentStoreSegments = useAudioStore.getState().segments;
+      if (currentStoreSegments.length > 0 && currentStoreSegments.length === allSegments.length) {
+        updateSegmentsWithoutReset(allSegments);
+      } else {
+        loadSegments(allSegments);
+      }
     };
 
     renderAllPages();
@@ -264,8 +260,6 @@ export const PdfViewer = ({ file }: PdfViewerProps) => {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pdfDocument, scale]);
-
-
 
   // Global event delegation for hover and click
   useEffect(() => {
@@ -304,13 +298,13 @@ export const PdfViewer = ({ file }: PdfViewerProps) => {
       const sentenceElement = target.closest('nr-sentence');
       if (sentenceElement) {
         const segmentIndex = parseInt(sentenceElement.getAttribute('data-na-sen-ind') || '-1', 10);
-        playSegment(segmentIndex);
+        if (segmentIndex >= 0) {
+          playSegment(segmentIndex);
+        }
       }
     };
 
-    // Use document-level delegation for pointerover (consistent with click)
     document.addEventListener('pointerover', handlePointerOver);
-    // container.addEventListener('click', handleClick);
     document.addEventListener('click', handleClick);
 
     const handlePointerOut = (e: PointerEvent) => {
@@ -322,39 +316,46 @@ export const PdfViewer = ({ file }: PdfViewerProps) => {
 
     return () => {
       document.removeEventListener('pointerover', handlePointerOver);
-      // container.removeEventListener('click', handleClick);
       document.removeEventListener('click', handleClick);
       document.removeEventListener('pointerout', handlePointerOut);
     };
   }, [playSegment]);
 
-  // Sync Highlight with Playback - updated for wrapped structure
+  // Sync Highlight with Playback & Line-Tracking Auto-Scroll
   useEffect(() => {
-    // Always clear old state
+    // Clear old highlights
     document.querySelectorAll('nr-sentence.playing').forEach(el => {
       el.classList.remove('playing');
     });
 
-    // Only highlight when a segment is selected (any non-idle status)
     if (!storeSegments.length || playbackStatus === 'idle') return;
 
     if (currentSegmentIndex >= 0 && currentSegmentIndex < storeSegments.length) {
-      // Use the class selector nr-s{index} to find all fragments
       const currentElements = document.querySelectorAll(`.nr-s${currentSegmentIndex}`);
       currentElements.forEach(el => el.classList.add('playing'));
+
+      // Flawless line-tracking: gently scroll the active sentence into view
+      if (currentElements.length > 0) {
+        const firstEl = currentElements[0] as HTMLElement;
+        firstEl.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
+      }
     }
   }, [currentSegmentIndex, storeSegments, playbackStatus]);
 
   if (isLoading) {
-    return <div className="flex items-center justify-center p-8">Loading PDF...</div>;
+    return (
+      <div className="flex flex-col items-center justify-center p-16 gap-3">
+        <div className="w-9 h-9 rounded-full border-[3px] border-[color-mix(in_srgb,var(--color-primary)_20%,transparent)] border-t-primary animate-spin-slow" />
+        <p className="text-sm text-muted">Rendering PDF pages with high clarity…</p>
+      </div>
+    );
   }
 
   return (
-    <div className="flex flex-col items-center gap-4 w-full" style={{ position: 'relative' }}>
-      {/* Zoom controls moved to AudioBar */}
+    <div className="flex flex-col items-center gap-4 w-full relative">
       <div
         ref={containerRef}
-        className="pdf-container"
+        className="flex flex-col items-center w-full"
       />
     </div>
   );

@@ -1,0 +1,29 @@
+{
+  "name": "PDF Text to Speech Reader",
+  "short_name": "PDF TTS Reader",
+  "description": "Intelligent PDF & text reader with synchronized text-to-speech, interactive sentence highlighting, and smart line tracking.",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#071311",
+  "theme_color": "#0d9488",
+  "icons": [
+    {
+      "src": "./icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "./icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "./apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    }
+  ]
+}
+

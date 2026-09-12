@@ -15,6 +15,7 @@ const hashString = (str: string) => {
 
 export const AudioEngine = () => {
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
   const lastHashRef = useRef<string | null>(null);
   const lastUrlRef = useRef<string | null>(null);
 
@@ -24,18 +25,20 @@ export const AudioEngine = () => {
   const segments = useAudioStore(state => state.segments);
   const audioCache = useAudioStore(state => state.audioCache);
   const selectedVoice = useAudioStore(state => state.selectedVoice);
+  const playbackSpeed = useAudioStore(state => state.playbackSpeed);
   const next = useAudioStore(state => state.next);
 
   // Create audio element once
   useEffect(() => {
     if (!audioRef.current) {
-      audioRef.current = new Audio();
-      audioRef.current.onended = () => {
+      const audio = new Audio();
+      audio.onended = () => {
         next();
       };
-      audioRef.current.onerror = (e) => {
+      audio.onerror = (e) => {
         console.error('Audio playback error', e);
       };
+      audioRef.current = audio;
     }
   }, [next]);
 
@@ -44,29 +47,45 @@ export const AudioEngine = () => {
     const audio = audioRef.current;
     if (!audio) return;
 
+    // Adjust playback rate on the active audio element
+    audio.playbackRate = playbackSpeed;
+
     // Stop everything when not in 'playing' state
     if (playbackStatus !== 'playing') {
       try { audio.pause(); } catch { }
-      window.speechSynthesis.cancel();
+      if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+      }
+      utteranceRef.current = null;
       return;
     }
 
     // --- Playing ---
     const segment = segments[currentSegmentIndex];
-    if (!segment) return;
+    if (!segment) {
+      // Reached the end or no content
+      useAudioStore.getState().setPlaybackStatus('idle');
+      return;
+    }
 
     const hash = hashString(segment.text);
     const blob = audioCache.get(hash);
 
     if (blob) {
-      // Stop any browser TTS that might be running
-      window.speechSynthesis.cancel();
+      // Cancel any browser TTS utterance
+      if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+      }
+      utteranceRef.current = null;
 
       // Resume if same segment (hash matches)
       if (lastHashRef.current === hash && lastUrlRef.current) {
         (async () => {
-          try { await audio.play(); } catch (e: any) {
-            if (e?.name !== 'AbortError') console.error('Play failed', e);
+          try {
+            audio.playbackRate = playbackSpeed;
+            await audio.play();
+          } catch (e: unknown) {
+            if (e instanceof Error && e.name !== 'AbortError') console.error('Audio play failed', e);
           }
         })();
         return;
@@ -81,30 +100,51 @@ export const AudioEngine = () => {
       lastUrlRef.current = url;
       lastHashRef.current = hash;
       audio.src = url;
+      audio.playbackRate = playbackSpeed;
 
       (async () => {
-        try { await audio.play(); } catch (e: any) {
-          if (e?.name !== 'AbortError') console.error('Play failed', e);
+        try {
+          await audio.play();
+        } catch (e: unknown) {
+          if (e instanceof Error && e.name !== 'AbortError') console.error('Audio play failed', e);
         }
       })();
     } else {
-      // Browser TTS fallback
+      // Browser Web Speech API fallback
       try { audio.pause(); } catch { }
+      if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
+
       window.speechSynthesis.cancel();
 
       const utterance = new SpeechSynthesisUtterance(segment.text);
+      utterance.rate = playbackSpeed;
+
       if (selectedVoice) {
-        const voice = window.speechSynthesis.getVoices().find(v => v.voiceURI === selectedVoice);
-        if (voice) utterance.voice = voice;
+        const voices = window.speechSynthesis.getVoices();
+        const foundVoice = voices.find(v => v.voiceURI === selectedVoice);
+        if (foundVoice) utterance.voice = foundVoice;
       }
 
       utterance.onend = () => {
+        utteranceRef.current = null;
         next();
       };
 
+      utterance.onerror = (e) => {
+        // Ignore user-initiated cancellation errors
+        if (e.error === 'canceled' || e.error === 'interrupted') {
+          return;
+        }
+        console.warn('Speech synthesis error:', e);
+        utteranceRef.current = null;
+        next();
+      };
+
+      // Hold utterance in ref to protect from Chromium garbage collection
+      utteranceRef.current = utterance;
       window.speechSynthesis.speak(utterance);
     }
-  }, [currentSegmentIndex, playbackStatus, segments, audioCache, selectedVoice, next]);
+  }, [currentSegmentIndex, playbackStatus, segments, audioCache, selectedVoice, playbackSpeed, next]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -117,7 +157,10 @@ export const AudioEngine = () => {
       if (audioRef.current) {
         try { audioRef.current.pause(); } catch { }
       }
-      window.speechSynthesis.cancel();
+      if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+      }
+      utteranceRef.current = null;
     };
   }, []);
 

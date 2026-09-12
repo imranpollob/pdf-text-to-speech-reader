@@ -1,4 +1,4 @@
-# Document Echo 📄🔊
+# PDF Text to Speech Reader 📄🔊
 
 A PDF and text reader with text-to-speech capabilities. Upload PDFs or paste text, click sentences, and listen with synchronized highlighting.
 
@@ -20,7 +20,7 @@ A PDF and text reader with text-to-speech capabilities. Upload PDFs or paste tex
 
 ```bash
 git clone <repository-url>
-cd document-echo
+cd pdf-text-to-speech-reader
 npm install
 npm run dev
 ```
@@ -50,7 +50,7 @@ The server runs at `http://localhost:8880`. In the app, open the voice popover a
 ## 📖 Usage
 
 1. **PDF mode** — drag & drop a PDF onto the upload area
-2. **Text mode** — click the ✏️ tab, paste text, press **🔊 Read Aloud**
+2. **Text mode** — click **Paste Text**, enter your text, press **🔊 Read Aloud**
 3. Click any sentence to start playback from that point
 4. Use the audio bar: ▶ Play/Pause, ◀ Previous, ▶ Next sentence
 5. Open the 💬 voice popover to switch between Browser and Kokoro voices
