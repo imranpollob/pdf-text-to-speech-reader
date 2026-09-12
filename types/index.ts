@@ -5,9 +5,9 @@ export interface TextSegment {
   text: string;        // The actual sentence text
   pageNumber: number;
   // Bounding box for highlighting (optional, if using canvas drawing)
-  rect?: { x: number, y: number, w: number, h: number }; 
+  rect?: { x: number; y: number; w: number; h: number };
   // IDs of the specific span elements in the PDF.js text layer
-  spanIds: string[];   
+  spanIds: string[];
   // Fine-grained fragments per span so we can split multiple sentences inside one span
   spanFragments?: { spanId: string; text: string }[];
 }
@@ -23,6 +23,12 @@ export interface AudioState {
   // Universal playback rate (0.75x to 2x)
   playbackSpeed: number;
 
+  // Reading settings
+  autoScroll: boolean;
+  currentPage: number;
+  totalPages: number;
+  isFitToWidth: boolean;
+
   // TTS engine
   ttsEngine: TtsEngine;
   kokoroVoice: string;
@@ -35,11 +41,15 @@ export interface AudioState {
   zoomIn: () => void;
   zoomOut: () => void;
   zoomReset: () => void;
+  setIsFitToWidth: (fit: boolean) => void;
 
   // Actions
   setFile: (file: File | null) => void;
   setDocumentTitle: (title: string | null) => void;
   setPlaybackSpeed: (speed: number) => void;
+  setAutoScroll: (enabled: boolean) => void;
+  setCurrentPage: (page: number) => void;
+  setTotalPages: (pages: number) => void;
   setTtsEngine: (engine: TtsEngine) => void;
   setKokoroVoice: (voice: string) => void;
   setKokoroSpeed: (speed: number) => void;
@@ -58,3 +68,4 @@ export interface AudioState {
   next: () => void;
   setPlaybackStatus: (status: 'idle' | 'loading' | 'playing' | 'paused') => void;
 }
+

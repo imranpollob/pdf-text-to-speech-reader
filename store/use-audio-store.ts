@@ -33,15 +33,19 @@ export const useAudioStore = create<AudioStore>((set, get) => ({
   // Speed
   playbackSpeed: 1.0,
 
+  // Reading & navigation state
+  autoScroll: true,
+  currentPage: 1,
+  totalPages: 1,
+  isFitToWidth: false,
+
   // TTS engine
   ttsEngine: 'browser',
   kokoroVoice: 'af_heart',
   kokoroSpeed: 1.0,
   kokoroServerUrl: KOKORO_DEFAULT_URL,
 
-  // These fields hold client-only persisted values (localStorage). They must
-  // start with server-safe defaults above and get filled in here after mount
-  // to avoid SSR/client hydration mismatches.
+  // Client-only persisted values (localStorage)
   hydrated: false,
   hydrate: () => {
     if (typeof window === 'undefined' || get().hydrated) return;
@@ -53,11 +57,15 @@ export const useAudioStore = create<AudioStore>((set, get) => ({
       if (!isNaN(parsed) && parsed >= 0.5 && parsed <= 3.0) savedSpeed = parsed;
     }
 
+    const savedAutoScrollRaw = localStorage.getItem('autoScroll');
+    const savedAutoScroll = savedAutoScrollRaw !== null ? savedAutoScrollRaw === 'true' : true;
+
     set({
       hydrated: true,
       selectedVoice: localStorage.getItem('selectedVoice') ?? null,
       playbackSpeed: savedSpeed,
       kokoroSpeed: savedSpeed,
+      autoScroll: savedAutoScroll,
       ttsEngine: (localStorage.getItem('ttsEngine') as TtsEngine) ?? 'browser',
       kokoroVoice: localStorage.getItem('kokoroVoice') ?? 'af_heart',
       kokoroServerUrl: localStorage.getItem('kokoroServerUrl') ?? KOKORO_DEFAULT_URL,
@@ -67,6 +75,8 @@ export const useAudioStore = create<AudioStore>((set, get) => ({
   setFile: (file: File | null) => set({
     file,
     documentTitle: file ? file.name : null,
+    currentPage: 1,
+    totalPages: 1,
   }),
 
   setDocumentTitle: (title: string | null) => set({ documentTitle: title }),
@@ -77,6 +87,17 @@ export const useAudioStore = create<AudioStore>((set, get) => ({
     }
     set({ playbackSpeed: speed, kokoroSpeed: speed });
   },
+
+  setAutoScroll: (enabled: boolean) => {
+    if (typeof window !== 'undefined') {
+      try { localStorage.setItem('autoScroll', enabled.toString()); } catch {}
+    }
+    set({ autoScroll: enabled });
+  },
+
+  setCurrentPage: (page: number) => set({ currentPage: Math.max(1, page) }),
+  setTotalPages: (pages: number) => set({ totalPages: Math.max(1, pages) }),
+  setIsFitToWidth: (fit: boolean) => set({ isFitToWidth: fit }),
 
   setTtsEngine: (engine: TtsEngine) => {
     if (typeof window !== 'undefined') {
@@ -128,7 +149,6 @@ export const useAudioStore = create<AudioStore>((set, get) => ({
     const { segments, ttsEngine, audioCache, kokoroVoice, kokoroSpeed, kokoroServerUrl } = get();
     if (index < 0 || index >= segments.length) return;
 
-    // Transition to loading while preparing audio
     set({ currentSegmentIndex: index, playbackStatus: 'loading' });
 
     const segment = segments[index];
@@ -137,7 +157,6 @@ export const useAudioStore = create<AudioStore>((set, get) => ({
     if (ttsEngine === 'kokoro') {
       let blob = audioCache.get(hash);
 
-      // Check IndexedDB if not in memory
       if (!blob) {
         const dbBlob = await idbGet(hash);
         if (dbBlob && dbBlob instanceof Blob) {
@@ -150,7 +169,6 @@ export const useAudioStore = create<AudioStore>((set, get) => ({
         }
       }
 
-      // Fetch from kokoro backend
       if (!blob) {
         try {
           const response = await fetch(`${kokoroServerUrl}/tts`, {
@@ -181,12 +199,10 @@ export const useAudioStore = create<AudioStore>((set, get) => ({
         }
       }
 
-      // Prefetch next 1-2 sentences for seamless playback
       get().prefetchSegment(index + 1);
       get().prefetchSegment(index + 2);
     }
 
-    // Transition to playing — AudioEngine will play blob if available, else browser TTS
     set({ playbackStatus: 'playing' });
   },
 
@@ -226,7 +242,6 @@ export const useAudioStore = create<AudioStore>((set, get) => ({
 
     if (audioCache.has(hash)) return;
 
-    // Check IndexedDB first
     const dbBlob = await idbGet(hash);
     if (dbBlob && dbBlob instanceof Blob) {
       set(state => {
@@ -237,7 +252,6 @@ export const useAudioStore = create<AudioStore>((set, get) => ({
       return;
     }
 
-    // Fire-and-forget fetch from kokoro backend
     fetch(`${kokoroServerUrl}/tts`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -261,10 +275,11 @@ export const useAudioStore = create<AudioStore>((set, get) => ({
       .catch(e => console.warn('Prefetch failed:', e));
   },
 
-  // PDF zoom state (shared)
+  // PDF zoom state
   scale: 1.5,
-  setScale: (s: number) => set({ scale: s }),
-  zoomIn: () => set(state => ({ scale: Math.min(3.5, +(state.scale * 1.2).toFixed(2)) })),
-  zoomOut: () => set(state => ({ scale: Math.max(0.5, +(state.scale / 1.2).toFixed(2)) })),
-  zoomReset: () => set({ scale: 1.5 }),
+  setScale: (s: number) => set({ scale: s, isFitToWidth: false }),
+  zoomIn: () => set(state => ({ scale: Math.min(3.5, +(state.scale * 1.2).toFixed(2)), isFitToWidth: false })),
+  zoomOut: () => set(state => ({ scale: Math.max(0.5, +(state.scale / 1.2).toFixed(2)), isFitToWidth: false })),
+  zoomReset: () => set({ scale: 1.5, isFitToWidth: false }),
 }));
+
