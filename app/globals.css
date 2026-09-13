@@ -212,6 +212,7 @@
   --animate-fade-in: fade-in 0.2s ease;
   --animate-fade-in-fast: fade-in 0.15s ease;
   --animate-fade-in-slow: fade-in 0.25s ease-out;
+  --animate-slide-up: slide-up 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 /* ────────────────────────────────────────────────────────
@@ -258,6 +259,17 @@
   }
 }
 
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 /* ────────────────────────────────────────────────────────
    Theme switch thumb — must react to the [data-theme] attribute
    (not React state) so it never flashes the wrong icon: the
@@ -291,6 +303,10 @@
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+.safe-bottom {
+  padding-bottom: max(16px, env(safe-area-inset-bottom));
 }
 
 /* ────────────────────────────────────────────────────────

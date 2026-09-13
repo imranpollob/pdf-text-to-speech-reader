@@ -73,6 +73,7 @@ The server runs at `http://localhost:8880`. In the app, open the voice popover a
 ```
 ├── app/              # Next.js app router (layout, page, globals.css)
 ├── components/       # React components (AudioEngine, NavBar, PdfViewer, TextViewer)
+├── components/       # UI & Audio components (Header, PlayerBar, VoiceSheet, SpeedMenu, PageNavigator, PdfViewer, TextViewer, AudioEngine, Icons)
 ├── store/            # Zustand store (audio state, TTS logic, prefetch)
 ├── lib/              # Text normalizer (PDF + plain text → segments)
 ├── types/            # Shared TypeScript types

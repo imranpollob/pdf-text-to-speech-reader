@@ -1,59 +1,94 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useMemo, Fragment } from 'react';
 import { useAudioStore } from '../store/use-audio-store';
 import { cn } from '../lib/cn';
 
 export const TextViewer = () => {
-  const segments = useAudioStore(state => state.segments);
-  const currentSegmentIndex = useAudioStore(state => state.currentSegmentIndex);
-  const playbackStatus = useAudioStore(state => state.playbackStatus);
-  const playSegment = useAudioStore(state => state.playSegment);
+  const segments = useAudioStore((state) => state.segments);
+  const currentSegmentIndex = useAudioStore((state) => state.currentSegmentIndex);
+  const playbackStatus = useAudioStore((state) => state.playbackStatus);
+  const autoScroll = useAudioStore((state) => state.autoScroll);
+  const playSegment = useAudioStore((state) => state.playSegment);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Line-tracking: Auto-scroll to current sentence during playback
+  // Line-tracking: Auto-scroll to current sentence during playback ONLY if autoScroll is enabled
   useEffect(() => {
-    if (playbackStatus === 'idle') return;
+    if (playbackStatus === 'idle' || !autoScroll) return;
     const el = document.getElementById(`text-seg-${currentSegmentIndex}`);
     if (el) {
-      el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
-  }, [currentSegmentIndex, playbackStatus]);
+  }, [currentSegmentIndex, playbackStatus, autoScroll]);
+
+  // Group sentences into paragraphs to preserve the original document organization
+  const paragraphs = useMemo(() => {
+    const list: { paraIndex: number; items: { segment: (typeof segments)[0]; globalIndex: number }[] }[] = [];
+    let current: { paraIndex: number; items: { segment: (typeof segments)[0]; globalIndex: number }[] } | null = null;
+
+    segments.forEach((segment, globalIndex) => {
+      const pIdx = segment.paragraphIndex ?? 0;
+      if (!current || current.paraIndex !== pIdx) {
+        current = { paraIndex: pIdx, items: [] };
+        list.push(current);
+      }
+      current.items.push({ segment, globalIndex });
+    });
+
+    return list;
+  }, [segments]);
 
   if (!segments.length) return null;
 
   return (
     <div
       ref={containerRef}
-      className="bg-surface border border-border rounded-[calc(var(--radius)*1.2)] p-[clamp(24px,5vw,40px)] text-lg leading-[1.85] text-foreground shadow-md outline-none"
+      className={cn(
+        'w-full max-w-3xl mx-auto bg-surface border border-border rounded-2xl md:rounded-3xl',
+        'p-6 sm:p-10 md:p-14 text-base sm:text-lg leading-relaxed md:leading-[1.9] text-foreground shadow-lg',
+        'transition-all duration-200 focus:outline-none'
+      )}
       tabIndex={0}
-      aria-label="Text reader content"
+      aria-label="Text document reader content"
     >
-      {segments.map((segment, index) => {
-        const isPlaying = playbackStatus !== 'idle' && currentSegmentIndex === index;
-        return (
-          <span
-            key={segment.id}
-            id={`text-seg-${index}`}
-            role="button"
-            tabIndex={0}
-            title="Click to read from here"
-            className={cn(
-              'inline cursor-pointer rounded mx-px px-1 py-0.5 transition-[background-color,box-shadow] duration-150 ease-linear hover:bg-highlight-hover hover:text-highlight-text',
-              isPlaying && 'bg-highlight-hover! text-highlight-text! shadow-[0_0_0_2px_var(--highlight-border)] font-medium'
-            )}
-            onClick={() => playSegment(index)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                playSegment(index);
-              }
-            }}
-          >
-            {segment.text}{' '}
-          </span>
-        );
-      })}
+      <div className="space-y-6">
+        {paragraphs.map((para) => (
+          <p key={para.paraIndex} className="m-0 leading-relaxed md:leading-[1.9]">
+            {para.items.map(({ segment, globalIndex }) => {
+              const isPlaying = playbackStatus !== 'idle' && currentSegmentIndex === globalIndex;
+              return (
+                <Fragment key={segment.id}>
+                  <span
+                    id={`text-seg-${globalIndex}`}
+                    role="button"
+                    tabIndex={0}
+                    title="Click to read aloud from here"
+                    className={cn(
+                      'cursor-pointer transition-colors duration-150 rounded px-1 py-0.5',
+                      'hover:bg-primary-subtle hover:text-primary',
+                      isPlaying
+                        ? 'bg-primary/25 text-foreground font-medium'
+                        : 'text-foreground/90'
+                    )}
+                    onClick={() => playSegment(globalIndex)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        playSegment(globalIndex);
+                      }
+                    }}
+                  >
+                    {segment.text}
+                  </span>
+                  {segment.trailingNewlines === 1 ? <br /> : ' '}
+                </Fragment>
+              );
+            })}
+          </p>
+        ))}
+      </div>
     </div>
   );
 };
+
+

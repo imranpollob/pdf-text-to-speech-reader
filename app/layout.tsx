@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import Script from "next/script";
 import { Outfit, Plus_Jakarta_Sans, JetBrains_Mono } from "next/font/google";
-import NavBar from "../components/NavBar";
+import Header from "../components/Header";
 import "./globals.css";
 
 const outfit = Outfit({
@@ -33,19 +33,23 @@ export const viewport: Viewport = {
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://imranpollob.github.io/pdf-text-to-speech-reader/"),
-  title: "PDF Text to Speech Reader | Free Online PDF & Text Reader",
+  title: "PDF & Text to Speech Reader | Free Online Audio Reader",
   description:
-    "Free, privacy-friendly online PDF and text reader with natural text-to-speech, interactive synchronized sentence highlighting, smart line tracking, and zoom controls.",
+    "Free, open-source PDF and text reader with synchronized sentence highlighting. Listen to PDFs and pasted text in your browser with neural and system voices.",
   keywords: [
-    "PDF reader",
-    "text to speech",
-    "TTS",
+    "PDF text to speech",
+    "paste text to speech",
+    "text to speech online",
+    "read PDF aloud free",
+    "listen to plain text",
     "PDF audio reader",
-    "speech synthesis",
-    "read aloud",
-    "PDF Text to Speech Reader",
-    "listen to PDF",
-    "accessible reader",
+    "free TTS reader",
+    "neural speech synthesis",
+    "kokoro TTS",
+    "accessible document reader",
+    "synchronized sentence highlighting",
+    "read aloud online",
+    "speech reader",
   ],
   authors: [{ name: "Imran Pollob", url: "https://github.com/imranpollob" }],
   creator: "Imran Pollob",
@@ -67,9 +71,9 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     url: "https://imranpollob.github.io/pdf-text-to-speech-reader/",
-    title: "PDF Text to Speech Reader — Free Online PDF & Text Reader",
+    title: "PDF & Text to Speech Reader — Free Online Audio Document Reader",
     description:
-      "Listen to PDFs and plain text with synchronized real-time sentence highlighting, smart line tracking, customizable voices, and speed controls.",
+      "Listen to PDFs and pasted text with synchronized sentence highlighting, adjustable speed, and neural or system voices.",
     siteName: "PDF Text to Speech Reader",
     images: [
       {
@@ -83,9 +87,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "PDF Text to Speech Reader — Free Online PDF & Text Reader",
+    title: "PDF & Text to Speech Reader — Free Online Audio Document Reader",
     description:
-      "Listen to PDFs and plain text with synchronized real-time sentence highlighting, smart line tracking, customizable voices, and speed controls.",
+      "Listen to PDFs and pasted text with synchronized sentence highlighting, adjustable speed, and neural or system voices.",
     images: ["./og-image.png"],
     creator: "@imranpollob",
   },
@@ -104,32 +108,97 @@ export const metadata: Metadata = {
 
 const jsonLd = {
   "@context": "https://schema.org",
-  "@type": "WebApplication",
-  name: "PDF Text to Speech Reader",
-  url: "https://imranpollob.github.io/pdf-text-to-speech-reader/",
-  description:
-    "An intelligent PDF & text reader with interactive text-to-speech, real-time sentence highlighting, and smart line tracking.",
-  image: "https://imranpollob.github.io/pdf-text-to-speech-reader/og-image.png",
-  applicationCategory: "MultimediaApplication",
-  operatingSystem: "Any",
-  author: {
-    "@type": "Person",
-    name: "Imran Pollob",
-    url: "https://github.com/imranpollob",
-  },
-  offers: {
-    "@type": "Offer",
-    price: "0",
-    priceCurrency: "USD",
-  },
-  featureList: [
-    "PDF Document text-to-speech",
-    "Plain text reader",
-    "Real-time sentence highlighting",
-    "Automatic line tracking",
-    "Customizable speech rate",
-    "Browser and Neural Kokoro TTS support",
-    "Full offline privacy",
+  "@graph": [
+    {
+      "@type": "WebApplication",
+      name: "PDF Text to Speech Reader",
+      url: "https://imranpollob.github.io/pdf-text-to-speech-reader/",
+      description:
+        "Free, privacy-friendly PDF and text reader with synchronized sentence highlighting and neural voices.",
+      image: "https://imranpollob.github.io/pdf-text-to-speech-reader/og-image.png",
+      applicationCategory: "MultimediaApplication",
+      operatingSystem: "Any",
+      author: {
+        "@type": "Person",
+        name: "Imran Pollob",
+        url: "https://github.com/imranpollob",
+      },
+      offers: {
+        "@type": "Offer",
+        price: "0",
+        priceCurrency: "USD",
+      },
+      featureList: [
+        "PDF and plain text reading",
+        "Synchronized sentence highlighting",
+        "Select any sentence to jump playback",
+        "Auto-scroll to follow along automatically",
+        "Adjustable playback speed from 0.75× to 2×",
+        "50+ Kokoro neural voices and system voices",
+        "Local in-browser document processing",
+      ],
+    },
+    {
+      "@type": "FAQPage",
+      mainEntity: [
+        {
+          "@type": "Question",
+          name: "Is it free and private?",
+          acceptedAnswer: {
+            "@type": "Answer",
+            text: "Yes. The application is free and open-source. Processing happens in your browser with no account or registration required.",
+          },
+        },
+        {
+          "@type": "Question",
+          name: "Are my PDFs uploaded to a server?",
+          acceptedAnswer: {
+            "@type": "Answer",
+            text: "No. PDFs and pasted text are parsed and rendered directly in your browser. Your documents are never uploaded to our servers.",
+          },
+        },
+        {
+          "@type": "Question",
+          name: "What types of PDFs are supported?",
+          acceptedAnswer: {
+            "@type": "Answer",
+            text: "Any standard digital PDF containing readable text is supported (such as research papers, textbooks, and reports). Scanned image-only PDFs without an embedded text layer are not currently supported unless OCR has already been applied.",
+          },
+        },
+        {
+          "@type": "Question",
+          name: "Can I paste text instead of uploading a PDF?",
+          acceptedAnswer: {
+            "@type": "Answer",
+            text: "Yes. You can paste or type text directly into the reader and listen with the same synchronized sentence highlighting and audio controls.",
+          },
+        },
+        {
+          "@type": "Question",
+          name: "How does synchronized highlighting work?",
+          acceptedAnswer: {
+            "@type": "Answer",
+            text: "As audio plays, the current sentence is highlighted and scrolled into view. You can also select any sentence to jump playback directly to that point.",
+          },
+        },
+        {
+          "@type": "Question",
+          name: "What voices are available?",
+          acceptedAnswer: {
+            "@type": "Answer",
+            text: "You can use voices provided by your browser and operating system, or connect to the optional local Kokoro engine for 50+ neural voices running directly on your device.",
+          },
+        },
+        {
+          "@type": "Question",
+          name: "Does it work on phones and tablets?",
+          acceptedAnswer: {
+            "@type": "Answer",
+            text: "Yes. The interface is optimized for mobile screens with touch-friendly controls, auto-fit PDF page scaling, and a bottom playback bar.",
+          },
+        },
+      ],
+    },
   ],
 };
 
@@ -142,7 +211,7 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning className="scroll-smooth text-[16px] overflow-x-hidden max-w-full">
       <body
         suppressHydrationWarning
-        className={`${outfit.variable} ${plusJakarta.variable} ${jetbrainsMono.variable} antialiased overflow-x-hidden max-w-full min-h-screen pt-[72px] max-md:pt-[68px] leading-[1.6] bg-background text-foreground font-sans transition-colors duration-[250ms] ease-linear`}
+        className={`${outfit.variable} ${plusJakarta.variable} ${jetbrainsMono.variable} antialiased overflow-x-hidden max-w-full min-h-screen pt-16 leading-[1.6] bg-background text-foreground font-sans transition-colors duration-[250ms] ease-linear`}
       >
         <Script
           id="json-ld"
@@ -166,7 +235,7 @@ export default function RootLayout({
             `,
           }}
         />
-        <NavBar />
+        <Header />
         {children}
       </body>
     </html>
