@@ -15,9 +15,14 @@ import {
   SparklesIcon,
   EditIcon,
   TrashIcon,
-  HeadphonesIcon,
   ChevronDownIcon,
   ChevronUpIcon,
+  BookOpenIcon,
+  GitHubIcon,
+  ShieldIcon,
+  AutoScrollIcon,
+  VoiceIcon,
+  SmartphoneIcon,
 } from '../components/Icons';
 
 const PdfViewer = dynamic(
@@ -75,11 +80,7 @@ export default function Home() {
   };
 
   const handleLoadSampleText = () => {
-    const sample = `Welcome to PDF Text to Speech Reader, an intelligent and accessible PDF and text reader with synchronized text-to-speech. Upload any PDF document or paste your own text to listen effortlessly with high acoustic clarity.
-
-As speech plays, each sentence is accurately tracked and highlighted on your screen in real time. You can click on any sentence to jump directly to it, change voices, or adjust the playback speed to match your personal reading pace.
-
-Designed with a strict focus on simplicity, accessibility, and complete privacy, PDF Text to Speech Reader processes your documents entirely on your local device. Enjoy your reading experience!`;
+    const sample = `Paste any text here and open it in the reader. As the audio plays, the current sentence will be highlighted automatically. You can also select any sentence to start listening from that point.`;
     setTextInput(sample);
     try {
       localStorage.setItem(TEXT_CACHE_KEY, sample);
@@ -200,24 +201,32 @@ Designed with a strict focus on simplicity, accessibility, and complete privacy,
 
   const faqs = [
     {
-      q: 'Is PDF Text to Speech Reader completely free and private?',
-      a: 'Yes, 100%. The application is free and open-source. All PDF rendering, text extraction, and browser speech synthesis run completely locally inside your browser. No files, documents, or personal data are ever sent to an external cloud server.',
+      q: 'Is it free and private?',
+      a: 'Yes. The application is free and open-source. Processing happens in your browser with no account or registration required.',
     },
     {
-      q: 'Can I paste text directly instead of uploading a PDF?',
-      a: 'Absolutely! Our dual-input interface allows you to paste or type articles, research notes, essays, or transcripts into the text box and immediately listen with synchronized interactive sentence tracking.',
+      q: 'Are my PDFs uploaded to a server?',
+      a: 'No. PDFs and pasted text are parsed and rendered directly in your browser. Your documents are never uploaded to our servers.',
     },
     {
-      q: 'How does real-time synchronized highlighting work?',
-      a: 'As the audio engine speaks each sentence, the corresponding sentence in the PDF or text view is dynamically highlighted and scrolled smoothly into view. You can also click on any sentence at any time to jump playback directly to that position.',
+      q: 'What types of PDFs are supported?',
+      a: 'Any standard digital PDF containing readable text is supported (such as research papers, textbooks, and reports). Scanned image-only PDFs without an embedded text layer are not currently supported unless OCR has already been applied.',
     },
     {
-      q: 'What voices are supported?',
-      a: 'The reader supports all native browser speech synthesis voices installed on your device across various languages and accents, plus high-fidelity neural Kokoro TTS (50+ voices) via the optional local server.',
+      q: 'Can I paste text instead of uploading a PDF?',
+      a: 'Yes. You can paste or type text directly into the reader and listen with the same synchronized sentence highlighting and audio controls.',
     },
     {
-      q: 'Does it work smoothly on mobile phones and tablets?',
-      a: 'Yes! The reader has an ergonomic mobile-first design with an accessible bottom media player bar, auto-fit PDF page scaling to eliminate horizontal scrolling, and touch-optimized bottom sheets for selecting voices and playback speeds.',
+      q: 'How does synchronized highlighting work?',
+      a: 'As audio plays, the current sentence is highlighted and scrolled into view. You can also select any sentence to jump playback directly to that point.',
+    },
+    {
+      q: 'What voices are available?',
+      a: 'You can use voices provided by your browser and operating system, or connect to the optional local Kokoro engine for 50+ neural voices running directly on your device.',
+    },
+    {
+      q: 'Does it work on phones and tablets?',
+      a: 'Yes. The interface is optimized for mobile screens with touch-friendly controls, auto-fit PDF page scaling, and a bottom playback bar.',
     },
   ];
 
@@ -226,25 +235,24 @@ Designed with a strict focus on simplicity, accessibility, and complete privacy,
       <div
         className={cn(
           'the-pdf-viewer relative w-full flex flex-col items-center',
-          showEmptyState && 'max-w-6xl py-6 sm:py-10'
+          showEmptyState && 'max-w-6xl pt-4 sm:pt-6 pb-0'
         )}
         style={{ maxWidth: file ? `${pdfMaxWidth}px` : undefined }}
       >
         {showEmptyState ? (
-          <div className="w-full flex flex-col gap-12 sm:gap-16 animate-fade-in-slow">
+          <div className="w-full flex flex-col gap-10 sm:gap-14 animate-fade-in-slow">
             {/* Hero Section */}
             <section
               className="text-center flex flex-col items-center pt-4 max-w-3xl mx-auto"
               aria-label="PDF Text to Speech Reader Overview"
             >
               <h1 className="font-heading text-3xl sm:text-4xl md:text-5xl lg:text-5xl leading-[1.15] font-extrabold text-foreground tracking-tight">
-                Read &amp; Listen to <span className="text-primary">PDFs &amp; Text</span> with Synchronized Speech
+                Listen to <span className="text-primary">PDFs &amp; Text</span> with Synchronized Highlighting
               </h1>
 
               <p className="mt-4 text-base sm:text-lg text-muted max-w-2xl mx-auto leading-relaxed">
-                Effortlessly convert research papers, ebooks, or pasted text into natural audio.
-                Click any sentence to listen, follow synchronized real-time line tracking, and customize
-                playback speeds with zero friction.
+                Turn PDFs and pasted text into speech. Follow along with synchronized sentence highlighting,
+                jump to any sentence, and adjust the voice and playback speed.
               </p>
             </section>
 
@@ -258,7 +266,7 @@ Designed with a strict focus on simplicity, accessibility, and complete privacy,
                   Choose How You Want to Read
                 </h2>
                 <p className="text-sm text-muted mt-1">
-                  Upload a PDF document or paste your own text below to start listening immediately
+                  Upload a PDF or paste text to start listening.
                 </p>
               </div>
 
@@ -266,7 +274,7 @@ Designed with a strict focus on simplicity, accessibility, and complete privacy,
                 {/* Feature 1: Upload PDF File */}
                 <div
                   className={cn(
-                    'bg-surface border-2 border-dashed border-border rounded-2xl md:rounded-3xl p-6 sm:p-8 flex flex-col shadow-sm transition-all duration-200 hover:border-primary hover:shadow-md',
+                    'bg-surface border border-border rounded-2xl md:rounded-3xl p-6 sm:p-8 flex flex-col shadow-sm transition-all duration-200 hover:border-primary hover:shadow-md',
                     dragActive && 'border-primary bg-primary-subtle/30 ring-4 ring-primary/20'
                   )}
                   onDrop={handleDrop}
@@ -288,20 +296,20 @@ Designed with a strict focus on simplicity, accessibility, and complete privacy,
                     </div>
                     <div>
                       <h3 className="font-heading text-xl font-bold text-foreground leading-tight">
-                        Upload PDF File
+                        Upload PDF
                       </h3>
-                      <span className="text-xs text-muted">Books, papers, essays &amp; reports</span>
+                      <span className="text-xs text-muted">Research papers, books, essays, and reports</span>
                     </div>
                   </div>
 
                   <p className="text-sm text-muted mb-6 leading-relaxed">
-                    Drag and drop your PDF document here, or browse files from your computer or phone.
-                    Pages render with high crispness and clickable sentence tracking.
+                    Drag and drop a PDF here, or choose a file from your device. The document is processed
+                    for reading and synchronized sentence playback.
                   </p>
 
                   <div
                     onClick={handleDropAreaClick}
-                    className="mt-auto border border-border/80 bg-background/50 hover:bg-background rounded-xl p-6 flex flex-col items-center justify-center text-center cursor-pointer transition-colors group mb-4"
+                    className="mt-auto border-2 border-dashed border-border/80 hover:border-primary bg-background/50 hover:bg-background rounded-xl p-6 flex flex-col items-center justify-center text-center cursor-pointer transition-colors group mb-4"
                     role="button"
                     tabIndex={0}
                     onKeyDown={(e) => {
@@ -313,34 +321,36 @@ Designed with a strict focus on simplicity, accessibility, and complete privacy,
                   >
                     <UploadCloudIcon size={32} className="text-primary mb-2 transition-transform duration-200 group-hover:scale-110" />
                     <span className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors">
-                      Click to choose a PDF file
+                      Choose a PDF
                     </span>
-                    <span className="text-xs text-muted mt-0.5">or drop file inside this box</span>
+                    <span className="text-xs text-muted mt-0.5">or drag and drop it here</span>
                   </div>
 
-                  <div className="flex flex-wrap items-center gap-3 justify-between pt-2 border-t border-border/60">
-                    <button
-                      type="button"
-                      className="flex-1 sm:flex-initial px-5 py-2.5 rounded-xl bg-primary text-white font-semibold text-sm shadow-md hover:bg-primary-hover hover:scale-102 active:scale-98 transition-all cursor-pointer border-0"
-                      onClick={handleDropAreaClick}
-                    >
-                      Browse PDF
-                    </button>
+                  <div className="flex flex-wrap items-center gap-2 justify-between pt-2 border-t border-border/60">
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        className="px-3 py-2 rounded-lg bg-navbar-control border border-navbar-control-border text-xs font-semibold text-foreground hover:border-primary hover:text-primary transition-colors cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
+                        onClick={handleLoadSamplePdf}
+                        disabled={isLoadingSample}
+                      >
+                        <SparklesIcon size={13} className="text-primary" />
+                        <span>{isLoadingSample ? 'Loading PDF…' : 'Sample PDF'}</span>
+                      </button>
+                    </div>
 
                     <button
                       type="button"
-                      className="flex-1 sm:flex-initial px-4 py-2.5 rounded-xl bg-navbar-control border border-navbar-control-border text-foreground font-semibold text-sm hover:border-primary hover:text-primary transition-all cursor-pointer flex items-center justify-center gap-1.5"
-                      onClick={handleLoadSamplePdf}
-                      disabled={isLoadingSample}
+                      className="px-5 py-2.5 rounded-xl bg-primary text-white font-semibold text-sm shadow-md hover:bg-primary-hover hover:scale-102 active:scale-98 transition-all cursor-pointer border-0"
+                      onClick={handleDropAreaClick}
                     >
-                      <SparklesIcon size={15} className="text-primary" />
-                      <span>{isLoadingSample ? 'Loading Paper…' : 'Sample Research Paper'}</span>
+                      Choose PDF
                     </button>
                   </div>
                 </div>
 
                 {/* Feature 2: Paste or Type Plain Text */}
-                <div className="bg-surface border border-border rounded-2xl md:rounded-3xl p-6 sm:p-8 flex flex-col shadow-sm transition-all duration-200 hover:shadow-md">
+                <div className="bg-surface border border-border rounded-2xl md:rounded-3xl p-6 sm:p-8 flex flex-col shadow-sm transition-all duration-200 hover:border-primary hover:shadow-md">
                   <div className="flex items-center gap-3 mb-4">
                     <div className="w-12 h-12 rounded-2xl bg-primary-subtle text-primary flex items-center justify-center shrink-0 shadow-xs">
                       <FileTextIcon size={24} />
@@ -349,7 +359,7 @@ Designed with a strict focus on simplicity, accessibility, and complete privacy,
                       <h3 className="font-heading text-xl font-bold text-foreground leading-tight">
                         Paste or Type Text
                       </h3>
-                      <span className="text-xs text-muted">Articles, notes, speeches &amp; study guides</span>
+                      <span className="text-xs text-muted">Articles, notes, speeches, and study material</span>
                     </div>
                   </div>
 
@@ -372,7 +382,7 @@ Designed with a strict focus on simplicity, accessibility, and complete privacy,
 
                   <textarea
                     className="w-full flex-1 min-h-[170px] p-3.5 rounded-xl border border-border bg-background text-foreground text-sm leading-relaxed resize-y outline-none transition-all focus:border-primary focus:ring-2 focus:ring-primary/20 mb-4"
-                    placeholder="Paste an article, speech, lecture notes, essay, or chapter here to read aloud…"
+                    placeholder="Paste or type text here to open in the reader…"
                     value={textInput}
                     onChange={(e) => {
                       setTextInput(e.target.value);
@@ -412,8 +422,8 @@ Designed with a strict focus on simplicity, accessibility, and complete privacy,
                       onClick={handleTextLoad}
                       disabled={!textInput.trim()}
                     >
-                      <HeadphonesIcon size={16} />
-                      <span>Start Listening</span>
+                      <BookOpenIcon size={16} />
+                      <span>Open in Reader</span>
                     </button>
                   </div>
                 </div>
@@ -430,10 +440,10 @@ Designed with a strict focus on simplicity, accessibility, and complete privacy,
                   id="how-it-works-heading"
                   className="font-heading text-2xl sm:text-3xl font-extrabold text-foreground"
                 >
-                  Listen to Any Document in 3 Simple Steps
+                  Start Listening in 3 Steps
                 </h2>
                 <p className="text-sm sm:text-base text-muted mt-2">
-                  No account, downloads, or payment required. Process your documents immediately.
+                  No account required. Your document is processed directly in the browser.
                 </p>
               </div>
 
@@ -446,8 +456,7 @@ Designed with a strict focus on simplicity, accessibility, and complete privacy,
                     Upload or Paste
                   </h3>
                   <p className="text-sm text-muted leading-relaxed">
-                    Drop your PDF research paper or paste plain text into the reader. Text is instantly
-                    parsed into clean sentences ready for narration.
+                    Upload a PDF or paste your text into the reader.
                   </p>
                 </div>
 
@@ -459,8 +468,7 @@ Designed with a strict focus on simplicity, accessibility, and complete privacy,
                     Choose Voice &amp; Speed
                   </h3>
                   <p className="text-sm text-muted leading-relaxed">
-                    Select your preferred speaker from 50+ local Kokoro neural voices or native device voices.
-                    Tune playback rate from 0.75x up to 2.0x.
+                    Choose from neural or system voices and adjust the playback speed from 0.75× to 2×.
                   </p>
                 </div>
 
@@ -472,8 +480,7 @@ Designed with a strict focus on simplicity, accessibility, and complete privacy,
                     Listen &amp; Follow Along
                   </h3>
                   <p className="text-sm text-muted leading-relaxed">
-                    Listen to natural speech with synchronized real-time sentence highlighting. Tap any
-                    sentence to jump audio immediately, or toggle auto-scroll.
+                    Listen while each sentence is highlighted. Select any sentence to jump to that point, or enable auto-scroll to follow along automatically.
                   </p>
                 </div>
               </div>
@@ -489,68 +496,63 @@ Designed with a strict focus on simplicity, accessibility, and complete privacy,
                   id="features-heading"
                   className="font-heading text-2xl sm:text-3xl font-extrabold text-foreground"
                 >
-                  Designed for Deep Focus &amp; Natural Listening
+                  Built for Comfortable Reading and Listening
                 </h2>
                 <p className="text-sm sm:text-base text-muted mt-2">
-                  Combining high-performance PDF rendering with intelligent audio synthesis for students,
-                  researchers, and professionals.
+                  Useful reading tools for papers, books, notes, and other long-form text.
                 </p>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Feature 1 */}
                 <div className="p-6 sm:p-8 rounded-2xl md:rounded-3xl bg-surface border border-border flex flex-col gap-3 shadow-xs transition-transform duration-200 hover:-translate-y-0.5">
-                  <div className="w-12 h-12 rounded-2xl bg-primary-subtle text-primary flex items-center justify-center font-bold text-xl shadow-xs">
-                    🛡️
+                  <div className="w-12 h-12 rounded-2xl bg-primary-subtle text-primary flex items-center justify-center shadow-xs">
+                    <ShieldIcon size={24} />
                   </div>
                   <h3 className="font-heading text-lg sm:text-xl font-bold text-foreground">
-                    100% Client-Side Privacy
+                    Local PDF Processing
                   </h3>
                   <p className="text-sm sm:text-base text-muted leading-relaxed">
-                    Your documents and text never leave your machine. PDF extraction and speech synthesis
-                    process locally in memory with zero tracking, telemetry, or server retention.
+                    PDFs and pasted text are processed in your browser. Local Kokoro voices also run directly on your device.
                   </p>
                 </div>
 
                 {/* Feature 2 */}
                 <div className="p-6 sm:p-8 rounded-2xl md:rounded-3xl bg-surface border border-border flex flex-col gap-3 shadow-xs transition-transform duration-200 hover:-translate-y-0.5">
-                  <div className="w-12 h-12 rounded-2xl bg-primary-subtle text-primary flex items-center justify-center font-bold text-xl shadow-xs">
-                    🎯
+                  <div className="w-12 h-12 rounded-2xl bg-primary-subtle text-primary flex items-center justify-center shadow-xs">
+                    <AutoScrollIcon size={24} />
                   </div>
                   <h3 className="font-heading text-lg sm:text-xl font-bold text-foreground">
-                    Interactive Sentence Highlighting
+                    Synchronized Sentence Highlighting
                   </h3>
                   <p className="text-sm sm:text-base text-muted leading-relaxed">
-                    Experience word-accurate sentence tracking. Click any sentence on screen to jump audio
-                    playback directly to that thought. Toggle auto-scroll lock to freely browse pages while listening.
+                    The current sentence is highlighted as you listen. Select any sentence to start playback from that point, and enable auto-scroll to follow the document automatically.
                   </p>
                 </div>
 
                 {/* Feature 3 */}
                 <div className="p-6 sm:p-8 rounded-2xl md:rounded-3xl bg-surface border border-border flex flex-col gap-3 shadow-xs transition-transform duration-200 hover:-translate-y-0.5">
-                  <div className="w-12 h-12 rounded-2xl bg-primary-subtle text-primary flex items-center justify-center font-bold text-xl shadow-xs">
-                    🤖
+                  <div className="w-12 h-12 rounded-2xl bg-primary-subtle text-primary flex items-center justify-center shadow-xs">
+                    <VoiceIcon size={24} />
                   </div>
                   <h3 className="font-heading text-lg sm:text-xl font-bold text-foreground">
-                    Neural &amp; System Speech Voices
+                    Neural &amp; System Voices
                   </h3>
                   <p className="text-sm sm:text-base text-muted leading-relaxed">
-                    Enjoy Kokoro ONNX neural TTS with over 50 natural voices, or use instant browser Web Speech
-                    API voices with zero setup. Fine-tune your listening rate from 0.75x to 2.0x.
+                    Choose from 50+ Kokoro neural voices or voices provided by your browser and operating system. Adjust playback speed from 0.75× to 2×.
                   </p>
                 </div>
 
                 {/* Feature 4 */}
                 <div className="p-6 sm:p-8 rounded-2xl md:rounded-3xl bg-surface border border-border flex flex-col gap-3 shadow-xs transition-transform duration-200 hover:-translate-y-0.5">
-                  <div className="w-12 h-12 rounded-2xl bg-primary-subtle text-primary flex items-center justify-center font-bold text-xl shadow-xs">
-                    📱
+                  <div className="w-12 h-12 rounded-2xl bg-primary-subtle text-primary flex items-center justify-center shadow-xs">
+                    <SmartphoneIcon size={24} />
                   </div>
                   <h3 className="font-heading text-lg sm:text-xl font-bold text-foreground">
-                    Mobile-First Ergonomics
+                    Mobile-Friendly Reader
                   </h3>
                   <p className="text-sm sm:text-base text-muted leading-relaxed">
-                    Engineered for one-handed reading on phones and tablets. Features a docked bottom player
-                    bar with thumb controls, auto-fit PDF scaling to avoid horizontal scrolling, and touch bottom sheets.
+                    Read and listen comfortably on phones and tablets with touch-friendly controls, auto-fit PDF pages, and a bottom playback bar.
                   </p>
                 </div>
               </div>
@@ -606,11 +608,11 @@ Designed with a strict focus on simplicity, accessibility, and complete privacy,
 
             {/* Brand Signature Footer */}
             <footer
-              className="text-center text-xs sm:text-sm text-muted pt-6 pb-6 border-t border-border/60"
+              className="w-full text-center text-xs sm:text-sm text-muted py-4 border-t border-border/60"
               role="contentinfo"
             >
-              <p>
-                PDF Text to Speech Reader — Crafted with care by{' '}
+              <div className="flex items-center justify-center gap-2 flex-wrap">
+                <span>PDF Text to Speech Reader — Crafted with care by</span>
                 <a
                   href="https://github.com/imranpollob"
                   target="_blank"
@@ -618,22 +620,24 @@ Designed with a strict focus on simplicity, accessibility, and complete privacy,
                   className="text-primary font-semibold hover:underline"
                 >
                   Imran Pollob
-                </a>{' '}
-                •{' '}
+                </a>
+                <span className="text-muted/40">•</span>
                 <a
                   href="https://github.com/imranpollob/pdf-text-to-speech-reader"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-primary font-semibold hover:underline"
+                  className="inline-flex items-center justify-center text-muted hover:text-foreground transition-colors p-1 rounded-md hover:bg-navbar-control"
+                  aria-label="GitHub Open Source Repository"
+                  title="GitHub Open Source Repository"
                 >
-                  GitHub Open Source Repository
+                  <GitHubIcon size={18} />
                 </a>
-              </p>
+              </div>
             </footer>
           </div>
         ) : file ? (
           <>
-            <div className="w-full pt-4 pb-20">
+            <div className="w-full pt-4 pb-28 sm:pb-32">
               <PdfViewer file={file} />
             </div>
 
@@ -649,7 +653,7 @@ Designed with a strict focus on simplicity, accessibility, and complete privacy,
             <PageNavigator />
           </>
         ) : (
-          <div className="w-full max-w-3xl mx-auto py-4 pb-20">
+          <div className="w-full max-w-3xl mx-auto py-4 pb-28 sm:pb-32">
             <div className="flex justify-between items-center mb-4 px-2">
               <span className="text-xs font-semibold text-muted uppercase tracking-wider">
                 Text Reader Mode

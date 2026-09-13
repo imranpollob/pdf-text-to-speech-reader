@@ -35,7 +35,7 @@ export const metadata: Metadata = {
   metadataBase: new URL("https://imranpollob.github.io/pdf-text-to-speech-reader/"),
   title: "PDF & Text to Speech Reader | Free Online Audio Reader",
   description:
-    "Free, 100% private online PDF and text-to-speech reader. Upload PDF documents or paste plain text to listen with natural neural voices, synchronized interactive sentence highlighting, and adjustable speed.",
+    "Free, open-source PDF and text reader with synchronized sentence highlighting. Listen to PDFs and pasted text in your browser with neural and system voices.",
   keywords: [
     "PDF text to speech",
     "paste text to speech",
@@ -47,7 +47,7 @@ export const metadata: Metadata = {
     "neural speech synthesis",
     "kokoro TTS",
     "accessible document reader",
-    "interactive sentence highlighting",
+    "synchronized sentence highlighting",
     "read aloud online",
     "speech reader",
   ],
@@ -73,7 +73,7 @@ export const metadata: Metadata = {
     url: "https://imranpollob.github.io/pdf-text-to-speech-reader/",
     title: "PDF & Text to Speech Reader — Free Online Audio Document Reader",
     description:
-      "Upload PDF documents or paste plain text to listen with synchronized real-time sentence highlighting, smart line tracking, customizable voices, and speed controls.",
+      "Listen to PDFs and pasted text with synchronized sentence highlighting, adjustable speed, and neural or system voices.",
     siteName: "PDF Text to Speech Reader",
     images: [
       {
@@ -89,7 +89,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "PDF & Text to Speech Reader — Free Online Audio Document Reader",
     description:
-      "Upload PDF documents or paste plain text to listen with synchronized real-time sentence highlighting, smart line tracking, customizable voices, and speed controls.",
+      "Listen to PDFs and pasted text with synchronized sentence highlighting, adjustable speed, and neural or system voices.",
     images: ["./og-image.png"],
     creator: "@imranpollob",
   },
@@ -114,7 +114,7 @@ const jsonLd = {
       name: "PDF Text to Speech Reader",
       url: "https://imranpollob.github.io/pdf-text-to-speech-reader/",
       description:
-        "Free, privacy-friendly online PDF and text-to-speech reader with natural neural voices and interactive sentence highlighting.",
+        "Free, privacy-friendly PDF and text reader with synchronized sentence highlighting and neural voices.",
       image: "https://imranpollob.github.io/pdf-text-to-speech-reader/og-image.png",
       applicationCategory: "MultimediaApplication",
       operatingSystem: "Any",
@@ -129,13 +129,13 @@ const jsonLd = {
         priceCurrency: "USD",
       },
       featureList: [
-        "PDF Document text-to-speech",
-        "Plain text reader and speech synthesizer",
-        "Real-time synchronized sentence highlighting",
-        "Automatic line tracking and follow audio",
-        "Customizable speech rate from 0.75x to 2.0x",
-        "50+ Neural Kokoro TTS and browser voices",
-        "100% offline client-side privacy",
+        "PDF and plain text reading",
+        "Synchronized sentence highlighting",
+        "Select any sentence to jump playback",
+        "Auto-scroll to follow along automatically",
+        "Adjustable playback speed from 0.75× to 2×",
+        "50+ Kokoro neural voices and system voices",
+        "Local in-browser document processing",
       ],
     },
     {
@@ -143,34 +143,58 @@ const jsonLd = {
       mainEntity: [
         {
           "@type": "Question",
-          name: "Is PDF Text to Speech Reader free to use?",
+          name: "Is it free and private?",
           acceptedAnswer: {
             "@type": "Answer",
-            text: "Yes, PDF Text to Speech Reader is completely free and open-source with no subscription, paywall, or sign-up required.",
+            text: "Yes. The application is free and open-source. Processing happens in your browser with no account or registration required.",
           },
         },
         {
           "@type": "Question",
-          name: "Are my PDF files and pasted text private?",
+          name: "Are my PDFs uploaded to a server?",
           acceptedAnswer: {
             "@type": "Answer",
-            text: "Yes, 100%. All PDF rendering and text parsing happen directly inside your browser on your device. Your documents are never uploaded to any cloud server.",
+            text: "No. PDFs and pasted text are parsed and rendered directly in your browser. Your documents are never uploaded to our servers.",
           },
         },
         {
           "@type": "Question",
-          name: "Can I paste plain text directly instead of uploading a PDF?",
+          name: "What types of PDFs are supported?",
           acceptedAnswer: {
             "@type": "Answer",
-            text: "Yes. You can paste any text, article, notes, or speech into the text reader box and immediately listen aloud with interactive sentence tracking.",
+            text: "Any standard digital PDF containing readable text is supported (such as research papers, textbooks, and reports). Scanned image-only PDFs without an embedded text layer are not currently supported unless OCR has already been applied.",
           },
         },
         {
           "@type": "Question",
-          name: "Does it work on mobile phones and tablets?",
+          name: "Can I paste text instead of uploading a PDF?",
           acceptedAnswer: {
             "@type": "Answer",
-            text: "Yes. The application is fully responsive with an ergonomic thumb-friendly bottom media player, slide-up voice sheets, and auto-fit PDF scaling.",
+            text: "Yes. You can paste or type text directly into the reader and listen with the same synchronized sentence highlighting and audio controls.",
+          },
+        },
+        {
+          "@type": "Question",
+          name: "How does synchronized highlighting work?",
+          acceptedAnswer: {
+            "@type": "Answer",
+            text: "As audio plays, the current sentence is highlighted and scrolled into view. You can also select any sentence to jump playback directly to that point.",
+          },
+        },
+        {
+          "@type": "Question",
+          name: "What voices are available?",
+          acceptedAnswer: {
+            "@type": "Answer",
+            text: "You can use voices provided by your browser and operating system, or connect to the optional local Kokoro engine for 50+ neural voices running directly on your device.",
+          },
+        },
+        {
+          "@type": "Question",
+          name: "Does it work on phones and tablets?",
+          acceptedAnswer: {
+            "@type": "Answer",
+            text: "Yes. The interface is optimized for mobile screens with touch-friendly controls, auto-fit PDF page scaling, and a bottom playback bar.",
           },
         },
       ],
@@ -187,7 +211,7 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning className="scroll-smooth text-[16px] overflow-x-hidden max-w-full">
       <body
         suppressHydrationWarning
-        className={`${outfit.variable} ${plusJakarta.variable} ${jetbrainsMono.variable} antialiased overflow-x-hidden max-w-full min-h-screen pt-16 pb-28 md:pb-32 leading-[1.6] bg-background text-foreground font-sans transition-colors duration-[250ms] ease-linear`}
+        className={`${outfit.variable} ${plusJakarta.variable} ${jetbrainsMono.variable} antialiased overflow-x-hidden max-w-full min-h-screen pt-16 leading-[1.6] bg-background text-foreground font-sans transition-colors duration-[250ms] ease-linear`}
       >
         <Script
           id="json-ld"
