@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useMemo, Fragment } from 'react';
 import { useAudioStore } from '../store/use-audio-store';
 import { cn } from '../lib/cn';
 
@@ -21,6 +21,23 @@ export const TextViewer = () => {
     }
   }, [currentSegmentIndex, playbackStatus, autoScroll]);
 
+  // Group sentences into paragraphs to preserve the original document organization
+  const paragraphs = useMemo(() => {
+    const list: { paraIndex: number; items: { segment: (typeof segments)[0]; globalIndex: number }[] }[] = [];
+    let current: { paraIndex: number; items: { segment: (typeof segments)[0]; globalIndex: number }[] } | null = null;
+
+    segments.forEach((segment, globalIndex) => {
+      const pIdx = segment.paragraphIndex ?? 0;
+      if (!current || current.paraIndex !== pIdx) {
+        current = { paraIndex: pIdx, items: [] };
+        list.push(current);
+      }
+      current.items.push({ segment, globalIndex });
+    });
+
+    return list;
+  }, [segments]);
+
   if (!segments.length) return null;
 
   return (
@@ -34,37 +51,44 @@ export const TextViewer = () => {
       tabIndex={0}
       aria-label="Text document reader content"
     >
-      <div className="flex flex-wrap gap-y-1">
-        {segments.map((segment, index) => {
-          const isPlaying = playbackStatus !== 'idle' && currentSegmentIndex === index;
-          return (
-            <span
-              key={segment.id}
-              id={`text-seg-${index}`}
-              role="button"
-              tabIndex={0}
-              title="Click to read aloud from here"
-              className={cn(
-                'inline rounded-md px-1 py-0.5 transition-all duration-150 cursor-pointer',
-                'hover:bg-primary-subtle hover:text-primary',
-                isPlaying
-                  ? 'bg-primary/20 text-foreground font-semibold shadow-[0_0_0_2px_var(--color-primary)] ring-2 ring-primary/20'
-                  : 'text-foreground/90'
-              )}
-              onClick={() => playSegment(index)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  e.preventDefault();
-                  playSegment(index);
-                }
-              }}
-            >
-              {segment.text}{' '}
-            </span>
-          );
-        })}
+      <div className="space-y-6">
+        {paragraphs.map((para) => (
+          <p key={para.paraIndex} className="m-0 leading-relaxed md:leading-[1.9]">
+            {para.items.map(({ segment, globalIndex }) => {
+              const isPlaying = playbackStatus !== 'idle' && currentSegmentIndex === globalIndex;
+              return (
+                <Fragment key={segment.id}>
+                  <span
+                    id={`text-seg-${globalIndex}`}
+                    role="button"
+                    tabIndex={0}
+                    title="Click to read aloud from here"
+                    className={cn(
+                      'cursor-pointer transition-colors duration-150 rounded px-1 py-0.5',
+                      'hover:bg-primary-subtle hover:text-primary',
+                      isPlaying
+                        ? 'bg-primary/25 text-foreground font-medium'
+                        : 'text-foreground/90'
+                    )}
+                    onClick={() => playSegment(globalIndex)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        playSegment(globalIndex);
+                      }
+                    }}
+                  >
+                    {segment.text}
+                  </span>
+                  {segment.trailingNewlines === 1 ? <br /> : ' '}
+                </Fragment>
+              );
+            })}
+          </p>
+        ))}
       </div>
     </div>
   );
 };
+
 

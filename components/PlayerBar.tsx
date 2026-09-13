@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef, useEffect, useMemo } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useAudioStore } from '../store/use-audio-store';
 import { cn } from '../lib/cn';
 import { VoiceSheet } from './VoiceSheet';
@@ -15,6 +15,9 @@ import {
   SpeedIcon,
   AutoScrollIcon,
   ChevronUpIcon,
+  SettingsIcon,
+  LocateIcon,
+  MinimizeIcon,
 } from './Icons';
 
 export const PlayerBar: React.FC = () => {
@@ -37,15 +40,28 @@ export const PlayerBar: React.FC = () => {
 
   const [isVoiceOpen, setIsVoiceOpen] = useState(false);
   const [isSpeedOpen, setIsSpeedOpen] = useState(false);
-  const [isScrubbing, setIsScrubbing] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isMinimized, setIsMinimized] = useState(false);
 
   const voiceTriggerRef = useRef<HTMLButtonElement>(null);
   const speedTriggerRef = useRef<HTMLButtonElement>(null);
-  const scrubberTrackRef = useRef<HTMLDivElement>(null);
+  const settingsRef = useRef<HTMLDivElement>(null);
+  const settingsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     hydrate();
   }, [hydrate]);
+
+  // Close menus on click outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (settingsRef.current && !settingsRef.current.contains(e.target as Node)) {
+        setIsSettingsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   // Global keyboard shortcuts
   useEffect(() => {
@@ -69,6 +85,7 @@ export const PlayerBar: React.FC = () => {
       } else if (e.code === 'Escape') {
         setIsVoiceOpen(false);
         setIsSpeedOpen(false);
+        setIsSettingsOpen(false);
       }
     };
 
@@ -76,33 +93,18 @@ export const PlayerBar: React.FC = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [playbackStatus, segments.length, currentSegmentIndex, play, pause, resume, next, prev]);
 
-  // Estimated reading time remaining (150 words/min average speech rate adjusted for speed)
-  const remainingEstimate = useMemo(() => {
-    if (!segments.length) return null;
-    const remainingSegments = segments.slice(currentSegmentIndex);
-    const totalRemainingWords = remainingSegments.reduce(
-      (acc, seg) => acc + seg.text.trim().split(/\s+/).length,
-      0
-    );
-    const wordsPerMinute = 150 * playbackSpeed;
-    const minutes = Math.max(1, Math.ceil(totalRemainingWords / wordsPerMinute));
-    return `${minutes} min left`;
-  }, [segments, currentSegmentIndex, playbackSpeed]);
+  const handleSettingsMouseEnter = () => {
+    if (settingsTimeoutRef.current) {
+      clearTimeout(settingsTimeoutRef.current);
+      settingsTimeoutRef.current = null;
+    }
+    setIsSettingsOpen(true);
+  };
 
-  const currentSegment = segments[currentSegmentIndex];
-  const progressPercent = segments.length > 0 ? ((currentSegmentIndex + 1) / segments.length) * 100 : 0;
-
-  // Scrubber click/drag interaction
-  const handleScrubberChange = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!scrubberTrackRef.current || segments.length === 0) return;
-    const rect = scrubberTrackRef.current.getBoundingClientRect();
-    const clickX = Math.max(0, Math.min(e.clientX - rect.left, rect.width));
-    const percentage = clickX / rect.width;
-    const targetIndex = Math.min(
-      segments.length - 1,
-      Math.max(0, Math.floor(percentage * segments.length))
-    );
-    prev(targetIndex);
+  const handleSettingsMouseLeave = () => {
+    settingsTimeoutRef.current = setTimeout(() => {
+      setIsSettingsOpen(false);
+    }, 250);
   };
 
   const handleScrollToCurrentSentence = () => {
@@ -126,9 +128,71 @@ export const PlayerBar: React.FC = () => {
     ttsEngine === 'kokoro'
       ? kokoroVoice || 'Kokoro HD'
       : selectedVoice
-      ? selectedVoice.replace(/^Microsoft /, '').replace(/ Online \(Natural\)/, '').slice(0, 16)
-      : 'System Voice';
+        ? selectedVoice.replace(/^Microsoft /, '').replace(/ Online \(Natural\)/, '').slice(0, 16)
+        : 'System Voice';
 
+  // Minimized Toolbar: Compact floating pill with Play/Pause and Expand trigger
+  if (isMinimized) {
+    return (
+      <nav
+        aria-label="Audio playback controls (minimized)"
+        className={cn(
+          'fixed z-[1000] transition-all duration-300 animate-slide-up',
+          'bottom-3 sm:bottom-4 left-0 right-0 w-full',
+          'flex justify-center pointer-events-none'
+        )}
+      >
+        <div
+          className={cn(
+            'pointer-events-auto flex items-center gap-1.5',
+            'bg-navbar/95 backdrop-blur-xl border border-navbar-border shadow-2xl',
+            'rounded-full p-1.5 pl-1.5 pr-2 transition-all duration-200'
+          )}
+        >
+          {/* Main Play / Pause Button */}
+          <button
+            type="button"
+            className={cn(
+              'w-11 h-11 rounded-full flex items-center justify-center bg-primary text-white border-0 shadow-md cursor-pointer transition-all duration-150 hover:bg-primary-hover hover:scale-105 active:scale-95 disabled:opacity-40',
+              playbackStatus === 'playing' && 'animate-play-pulse'
+            )}
+            title={playbackStatus === 'playing' ? 'Pause (Space)' : 'Play (Space)'}
+            aria-label={playbackStatus === 'playing' ? 'Pause playback' : 'Play document'}
+            disabled={playbackStatus === 'loading'}
+            onClick={() => {
+              if (playbackStatus === 'playing') pause();
+              else if (playbackStatus === 'paused') resume();
+              else play();
+            }}
+          >
+            {playbackStatus === 'loading' ? (
+              <svg className="animate-spin h-5 w-5 text-white" viewBox="0 0 24 24" fill="none">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+              </svg>
+            ) : playbackStatus === 'playing' ? (
+              <PauseIcon size={18} />
+            ) : (
+              <PlayIcon size={18} className="ml-0.5" />
+            )}
+          </button>
+
+          {/* Expand Toolbar Button */}
+          <button
+            type="button"
+            onClick={() => setIsMinimized(false)}
+            className="w-8 h-8 rounded-full flex items-center justify-center text-muted hover:text-foreground hover:bg-navbar-control transition-colors cursor-pointer"
+            title="Expand toolbar"
+            aria-label="Expand toolbar"
+          >
+            <ChevronUpIcon size={16} />
+          </button>
+        </div>
+      </nav>
+    );
+  }
+
+  // Full Minimalistic Toolbar
   return (
     <nav
       aria-label="Audio playback controls"
@@ -140,106 +204,105 @@ export const PlayerBar: React.FC = () => {
     >
       <div
         className={cn(
-          'pointer-events-auto w-full max-w-4xl mx-auto',
+          'pointer-events-auto w-full max-w-2xl mx-auto',
           'bg-navbar/95 backdrop-blur-xl border border-navbar-border shadow-2xl',
-          'rounded-2xl md:rounded-3xl p-3 sm:p-3.5 flex flex-col gap-2',
+          'rounded-2xl sm:rounded-full px-3 py-2 sm:px-4 sm:py-2.5',
           'transition-all duration-200'
         )}
       >
-        {/* Row 1: Interactive Progress Scrubber & Time Remaining */}
-        <div className="flex flex-col gap-1 px-1">
-          <div className="flex items-center justify-between text-[11px] font-mono font-medium text-muted">
-            <span className="flex items-center gap-1.5 text-foreground/85">
-              <span className="w-2 h-2 rounded-full bg-primary" />
-              <span>
-                Sentence {currentSegmentIndex + 1} of {segments.length}
-              </span>
-            </span>
-            <span>
-              {remainingEstimate} • {playbackSpeed}x
-            </span>
-          </div>
-
-          <div
-            ref={scrubberTrackRef}
-            className="group relative h-4 flex items-center cursor-pointer select-none py-1"
-            onClick={handleScrubberChange}
-            onMouseDown={() => setIsScrubbing(true)}
-            onMouseUp={() => setIsScrubbing(false)}
-            role="slider"
-            aria-label="Reading progress scrubber"
-            aria-valuenow={currentSegmentIndex + 1}
-            aria-valuemin={1}
-            aria-valuemax={segments.length}
-            tabIndex={0}
-          >
-            {/* Background track */}
-            <div className="w-full h-1.5 rounded-full bg-navbar-control border border-navbar-control-border overflow-hidden group-hover:h-2 transition-all duration-150">
-              {/* Active fill */}
-              <div
-                className="h-full bg-primary transition-all duration-150 rounded-full"
-                style={{ width: `${progressPercent}%` }}
-              />
-            </div>
-            {/* Thumb */}
-            <div
-              className={cn(
-                'absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-3.5 h-3.5 rounded-full bg-primary border-2 border-white shadow-md transition-transform duration-100 group-hover:scale-125',
-                isScrubbing && 'scale-125'
-              )}
-              style={{ left: `${progressPercent}%` }}
-            />
-          </div>
-        </div>
-
-        {/* Row 2: Active Sentence Live Preview */}
-        {currentSegment && (
-          <div
-            onClick={handleScrollToCurrentSentence}
-            className="flex items-center justify-between gap-2 px-3 py-1.5 rounded-xl bg-navbar-control/60 hover:bg-navbar-control transition-colors cursor-pointer border border-navbar-control-border/60 group"
-            title="Click to locate and center active sentence"
-          >
-            <p className="text-xs text-foreground/80 group-hover:text-foreground truncate font-medium flex-1">
-              &ldquo;{currentSegment.text}&rdquo;
-            </p>
-            <span className="text-[10px] text-primary flex items-center gap-0.5 shrink-0 opacity-80 group-hover:opacity-100 font-semibold uppercase tracking-wider">
-              <span>Locate</span>
-              <ChevronUpIcon size={12} />
-            </span>
-          </div>
-        )}
-
-        {/* Row 3: Controls Bar */}
-        <div className="flex items-center justify-between gap-2 sm:gap-4 pt-1">
-          {/* Left tools: Follow Audio & Voice Picker */}
+        <div className="flex items-center justify-between gap-2 sm:gap-4 w-full">
+          {/* Left tools: Settings (Following + Locate on hover) & Voice Picker */}
           <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-            {/* Auto-scroll Lock Toggle */}
-            <button
-              type="button"
-              className={cn(
-                'h-9 px-2.5 sm:px-3 rounded-xl border flex items-center gap-1.5 text-xs font-semibold cursor-pointer transition-all duration-150',
-                autoScroll
-                  ? 'bg-primary-subtle border-primary text-primary shadow-xs'
-                  : 'bg-navbar-control border-navbar-control-border text-muted hover:text-foreground'
-              )}
-              title={
-                autoScroll
-                  ? 'Auto-follow is ON: Page scrolls with voice (Click to turn off)'
-                  : 'Auto-follow is OFF: Free scrolling (Click to turn on)'
-              }
-              aria-label="Toggle auto scroll"
-              onClick={() => setAutoScroll(!autoScroll)}
+            {/* Settings Trigger with Hover Popover */}
+            <div
+              ref={settingsRef}
+              className="relative"
+              onMouseEnter={handleSettingsMouseEnter}
+              onMouseLeave={handleSettingsMouseLeave}
             >
-              <AutoScrollIcon size={15} />
-              <span className="hidden sm:inline">{autoScroll ? 'Following' : 'Scroll Free'}</span>
-            </button>
+              <button
+                type="button"
+                className={cn(
+                  'h-9 w-9 rounded-xl sm:rounded-full border flex items-center justify-center cursor-pointer transition-all duration-150',
+                  isSettingsOpen
+                    ? 'bg-navbar-control-hover border-primary text-primary shadow-xs'
+                    : 'bg-navbar-control border-navbar-control-border text-muted hover:text-foreground hover:border-primary/50'
+                )}
+                title="Settings (Following, Locate)"
+                aria-label="Playback Settings"
+                aria-expanded={isSettingsOpen}
+                onClick={() => setIsSettingsOpen(!isSettingsOpen)}
+              >
+                <SettingsIcon size={16} />
+              </button>
+
+              {/* Settings Hover Menu */}
+              {isSettingsOpen && (
+                <div
+                  className={cn(
+                    'absolute bottom-full mb-2 left-0 min-w-[175px]',
+                    'bg-navbar/95 backdrop-blur-xl border border-navbar-border shadow-2xl rounded-2xl p-1.5 flex flex-col gap-1',
+                    'animate-slide-up z-50'
+                  )}
+                >
+                  {/* Locate active sentence button */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      handleScrollToCurrentSentence();
+                      setIsSettingsOpen(false);
+                    }}
+                    className="w-full h-8 px-2.5 rounded-xl flex items-center gap-2 text-xs font-medium text-foreground hover:bg-primary-subtle hover:text-primary transition-colors cursor-pointer text-left"
+                    title="Locate and center active sentence on screen"
+                  >
+                    <LocateIcon size={14} className="text-primary shrink-0" />
+                    <span>Locate sentence</span>
+                  </button>
+
+                  {/* Following toggle button */}
+                  <button
+                    type="button"
+                    onClick={() => setAutoScroll(!autoScroll)}
+                    className={cn(
+                      'w-full h-8 px-2.5 rounded-xl flex items-center justify-between gap-2 text-xs font-medium transition-colors cursor-pointer text-left',
+                      autoScroll
+                        ? 'bg-primary/10 text-primary font-semibold'
+                        : 'text-foreground hover:bg-navbar-control'
+                    )}
+                    title={
+                      autoScroll
+                        ? 'Auto-follow is ON: Page scrolls with voice (Click to turn off)'
+                        : 'Auto-follow is OFF: Free scrolling (Click to turn on)'
+                    }
+                  >
+                    <div className="flex items-center gap-2">
+                      <AutoScrollIcon
+                        size={14}
+                        className={cn('shrink-0', autoScroll ? 'text-primary' : 'text-muted')}
+                      />
+                      <span>Following</span>
+                    </div>
+                    <span
+                      className={cn(
+                        'text-[10px] uppercase font-bold px-1.5 py-0.5 rounded tracking-wide',
+                        autoScroll
+                          ? 'bg-primary text-white'
+                          : 'bg-navbar-control border border-navbar-control-border text-muted'
+                      )}
+                    >
+                      {autoScroll ? 'ON' : 'OFF'}
+                    </span>
+                  </button>
+                </div>
+              )}
+            </div>
 
             {/* Voice Sheet Trigger */}
             <div className="relative">
               <button
                 ref={voiceTriggerRef}
                 type="button"
-                className="h-9 px-2.5 sm:px-3 rounded-xl bg-navbar-control border border-navbar-control-border text-foreground hover:border-primary hover:text-primary flex items-center gap-1.5 text-xs font-semibold cursor-pointer transition-all duration-150 max-w-[130px] sm:max-w-[180px]"
+                className="h-9 px-2.5 sm:px-3 rounded-xl sm:rounded-full bg-navbar-control border border-navbar-control-border text-foreground hover:border-primary hover:text-primary flex items-center gap-1.5 text-xs font-semibold cursor-pointer transition-all duration-150 max-w-[120px] sm:max-w-[170px]"
                 title="Select Voice"
                 aria-expanded={isVoiceOpen}
                 onClick={() => setIsVoiceOpen(!isVoiceOpen)}
@@ -257,22 +320,22 @@ export const PlayerBar: React.FC = () => {
           </div>
 
           {/* Center transport buttons: Prev, Big Play/Pause, Next, Stop */}
-          <div className="flex items-center gap-1.5 sm:gap-3">
+          <div className="flex items-center gap-1.5 sm:gap-2.5">
             <button
               type="button"
-              className="w-10 h-10 rounded-full flex items-center justify-center bg-navbar-control border border-navbar-control-border text-foreground hover:bg-navbar-control-hover hover:text-primary hover:border-primary transition-all active:scale-95 cursor-pointer disabled:opacity-40"
+              className="w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center bg-navbar-control border border-navbar-control-border text-foreground hover:bg-navbar-control-hover hover:text-primary hover:border-primary transition-all active:scale-95 cursor-pointer disabled:opacity-40"
               title="Previous sentence (Left Arrow)"
               aria-label="Previous sentence"
               onClick={() => prev(Math.max(0, currentSegmentIndex - 1))}
             >
-              <SkipBackIcon size={17} />
+              <SkipBackIcon size={16} />
             </button>
 
             {/* Main Play / Pause Button */}
             <button
               type="button"
               className={cn(
-                'w-12 h-12 rounded-full flex items-center justify-center bg-primary text-white border-0 shadow-lg cursor-pointer transition-all duration-150 hover:bg-primary-hover hover:scale-105 active:scale-95 disabled:opacity-40',
+                'w-11 h-11 sm:w-12 sm:h-12 rounded-full flex items-center justify-center bg-primary text-white border-0 shadow-lg cursor-pointer transition-all duration-150 hover:bg-primary-hover hover:scale-105 active:scale-95 disabled:opacity-40',
                 playbackStatus === 'playing' && 'animate-play-pulse'
               )}
               title={playbackStatus === 'playing' ? 'Pause (Space)' : 'Play (Space)'}
@@ -285,52 +348,52 @@ export const PlayerBar: React.FC = () => {
               }}
             >
               {playbackStatus === 'loading' ? (
-                <svg className="animate-spin h-6 w-6 text-white" viewBox="0 0 24 24" fill="none">
+                <svg className="animate-spin h-5 w-5 sm:h-6 sm:w-6 text-white" viewBox="0 0 24 24" fill="none">
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" />
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                 </svg>
               ) : playbackStatus === 'playing' ? (
-                <PauseIcon size={20} />
+                <PauseIcon size={19} />
               ) : (
-                <PlayIcon size={20} className="ml-0.5" />
+                <PlayIcon size={19} className="ml-0.5" />
               )}
             </button>
 
             <button
               type="button"
-              className="w-10 h-10 rounded-full flex items-center justify-center bg-navbar-control border border-navbar-control-border text-foreground hover:bg-navbar-control-hover hover:text-primary hover:border-primary transition-all active:scale-95 cursor-pointer disabled:opacity-40"
+              className="w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center bg-navbar-control border border-navbar-control-border text-foreground hover:bg-navbar-control-hover hover:text-primary hover:border-primary transition-all active:scale-95 cursor-pointer disabled:opacity-40"
               title="Next sentence (Right Arrow)"
               aria-label="Next sentence"
               onClick={() => next()}
             >
-              <SkipForwardIcon size={17} />
+              <SkipForwardIcon size={16} />
             </button>
 
             {(playbackStatus === 'playing' || playbackStatus === 'paused') && (
               <button
                 type="button"
-                className="w-9 h-9 rounded-full hidden sm:flex items-center justify-center bg-navbar-control border border-navbar-control-border text-error hover:bg-error/10 hover:border-error transition-all active:scale-95 cursor-pointer"
+                className="w-8 h-8 sm:w-9 sm:h-9 rounded-full hidden sm:flex items-center justify-center bg-navbar-control border border-navbar-control-border text-error hover:bg-error/10 hover:border-error transition-all active:scale-95 cursor-pointer"
                 title="Stop playback and reset to start"
                 aria-label="Stop playback"
                 onClick={stop}
               >
-                <StopIcon size={14} />
+                <StopIcon size={13} />
               </button>
             )}
           </div>
 
-          {/* Right tools: Speed Picker */}
-          <div className="flex items-center gap-2 shrink-0">
+          {/* Right tools: Speed Picker & Minimize */}
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
             <div className="relative">
               <button
                 ref={speedTriggerRef}
                 type="button"
-                className="h-9 px-2.5 sm:px-3 rounded-xl bg-navbar-control border border-navbar-control-border text-foreground hover:border-primary hover:text-primary flex items-center gap-1 text-xs font-semibold font-mono cursor-pointer transition-all duration-150"
+                className="h-9 px-2.5 sm:px-3 rounded-xl sm:rounded-full bg-navbar-control border border-navbar-control-border text-foreground hover:border-primary hover:text-primary flex items-center gap-1 text-xs font-semibold font-mono cursor-pointer transition-all duration-150"
                 title="Playback Speed"
                 aria-expanded={isSpeedOpen}
                 onClick={() => setIsSpeedOpen(!isSpeedOpen)}
               >
-                <SpeedIcon size={15} className="text-primary hidden sm:inline" />
+                <SpeedIcon size={14} className="text-primary hidden sm:inline" />
                 <span>{playbackSpeed}x</span>
               </button>
 
@@ -340,10 +403,20 @@ export const PlayerBar: React.FC = () => {
                 triggerRef={speedTriggerRef}
               />
             </div>
+
+            {/* Minimize / Hide toolbar button */}
+            <button
+              type="button"
+              onClick={() => setIsMinimized(true)}
+              className="h-9 w-9 rounded-xl sm:rounded-full bg-navbar-control border border-navbar-control-border text-muted hover:text-foreground hover:border-primary/50 flex items-center justify-center cursor-pointer transition-all duration-150"
+              title="Minimize toolbar"
+              aria-label="Minimize toolbar"
+            >
+              <MinimizeIcon size={15} />
+            </button>
           </div>
         </div>
       </div>
     </nav>
   );
 };
-

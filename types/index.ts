@@ -10,6 +10,9 @@ export interface TextSegment {
   spanIds: string[];
   // Fine-grained fragments per span so we can split multiple sentences inside one span
   spanFragments?: { spanId: string; text: string }[];
+  // Formatting metadata for text reader mode
+  paragraphIndex?: number;
+  trailingNewlines?: number;
 }
 
 export interface AudioState {

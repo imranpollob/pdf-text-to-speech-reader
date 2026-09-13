@@ -147,39 +147,24 @@ export function normalizeText(
 }
 
 /**
- * Normalise a raw text string (pasted or typed) into sentence segments.
- * Uses the same punctuation-based splitting as the PDF normaliser.
+ * Helper to split a single text line into sentences using punctuation boundaries.
  */
-export function normalizeRawText(text: string): TextSegment[] {
-  const segments: TextSegment[] = [];
-  const chars = [...text];
-  let segStart = 0;
+function splitLineIntoSentences(line: string): string[] {
+  const chars = [...line];
+  const sentences: string[] = [];
+  let start = 0;
 
   const flush = (endExclusive: number) => {
-    if (endExclusive <= segStart) return;
-
-    const raw = text.slice(segStart, endExclusive);
-    const trimmed = raw.replace(/\s+/g, ' ').trim();
-    if (!trimmed) {
-      segStart = endExclusive;
-      return;
-    }
-
-    segments.push({
-      id: crypto.randomUUID(),
-      text: trimmed,
-      pageNumber: 1,
-      spanIds: [],
-    });
-
-    segStart = endExclusive;
+    if (endExclusive <= start) return;
+    const s = line.slice(start, endExclusive).trim();
+    if (s) sentences.push(s);
+    start = endExclusive;
   };
 
   for (let i = 0; i < chars.length; i++) {
     const ch = chars[i];
-    let isSentenceEnd = /[.!?:]/.test(ch);
+    let isSentenceEnd = /[.!?]/.test(ch);
 
-    // Don't split on decimal numbers (e.g. 3.14) or abbreviations
     if (isSentenceEnd && ch === '.') {
       const prev = i > 0 ? chars[i - 1] : '';
       const next = i + 1 < chars.length ? chars[i + 1] : '';
@@ -191,10 +176,75 @@ export function normalizeRawText(text: string): TextSegment[] {
     }
 
     if (isSentenceEnd) {
-      flush(i + 1);
+      const next = i + 1 < chars.length ? chars[i + 1] : '';
+      if (next && !/[\s"'\)\]]/.test(next)) {
+        isSentenceEnd = false;
+      }
+    }
+
+    if (isSentenceEnd) {
+      let end = i + 1;
+      while (end < chars.length && /["'\)\]]/.test(chars[end])) {
+        end++;
+      }
+      flush(end);
+      i = end - 1;
     }
   }
 
   flush(chars.length);
+  return sentences.length > 0 ? sentences : [line.trim()];
+}
+
+/**
+ * Normalise a raw text string (pasted or typed) into sentence segments,
+ * preserving paragraphs, line breaks, and natural document organization.
+ */
+export function normalizeRawText(text: string): TextSegment[] {
+  if (!text || !text.trim()) return [];
+
+  const normalized = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+  const rawParagraphs = normalized.split(/\n{2,}/);
+  const segments: TextSegment[] = [];
+
+  let paraIdx = 0;
+
+  for (const rawPara of rawParagraphs) {
+    const trimmedPara = rawPara.trim();
+    if (!trimmedPara) continue;
+
+    const lines = trimmedPara.split(/\n/);
+
+    for (let lineIdx = 0; lineIdx < lines.length; lineIdx++) {
+      const line = lines[lineIdx];
+      const trimmedLine = line.trim();
+      if (!trimmedLine) continue;
+
+      const isLastLineInPara = lineIdx === lines.length - 1;
+      const lineSentences = splitLineIntoSentences(trimmedLine);
+
+      for (let sIdx = 0; sIdx < lineSentences.length; sIdx++) {
+        const segText = lineSentences[sIdx];
+        const isLastSegInLine = sIdx === lineSentences.length - 1;
+
+        let trailingNewlines = 0;
+        if (isLastSegInLine) {
+          trailingNewlines = isLastLineInPara ? 2 : 1;
+        }
+
+        segments.push({
+          id: crypto.randomUUID(),
+          text: segText,
+          pageNumber: 1,
+          spanIds: [],
+          paragraphIndex: paraIdx,
+          trailingNewlines,
+        });
+      }
+    }
+
+    paraIdx++;
+  }
+
   return segments;
 }
