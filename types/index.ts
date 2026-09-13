@@ -46,6 +46,13 @@ export interface AudioState {
   zoomReset: () => void;
   setIsFitToWidth: (fit: boolean) => void;
 
+  // Text reader font size state
+  textFontSize: number;
+  setTextFontSize: (size: number) => void;
+  increaseFontSize: () => void;
+  decreaseFontSize: () => void;
+  resetFontSize: () => void;
+
   // Actions
   setFile: (file: File | null) => void;
   setDocumentTitle: (title: string | null) => void;

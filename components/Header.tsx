@@ -30,6 +30,10 @@ export default function Header() {
   const zoomReset = useAudioStore((s) => s.zoomReset);
   const isFitToWidth = useAudioStore((s) => s.isFitToWidth);
   const setIsFitToWidth = useAudioStore((s) => s.setIsFitToWidth);
+  const textFontSize = useAudioStore((s) => s.textFontSize);
+  const increaseFontSize = useAudioStore((s) => s.increaseFontSize);
+  const decreaseFontSize = useAudioStore((s) => s.decreaseFontSize);
+  const resetFontSize = useAudioStore((s) => s.resetFontSize);
 
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
   const [showShortcutsModal, setShowShortcutsModal] = useState(false);
@@ -182,7 +186,7 @@ export default function Header() {
             )}
 
             {/* Zoom Controls (Visible when PDF is loaded on screens >= 640px) */}
-            {file && (
+            {file ? (
               <div
                 className="hidden sm:inline-flex items-center bg-navbar-control border border-navbar-control-border rounded-xl overflow-hidden h-[34px] shadow-xs"
                 role="group"
@@ -230,7 +234,43 @@ export default function Header() {
                   <span className="hidden lg:inline text-[11px]">Fit</span>
                 </button>
               </div>
-            )}
+            ) : hasContent ? (
+              /* Font Size Controls (Visible when Pasted Text is active on screens >= 640px) */
+              <div
+                className="hidden sm:inline-flex items-center bg-navbar-control border border-navbar-control-border rounded-xl overflow-hidden h-[34px] shadow-xs"
+                role="group"
+                aria-label="Text reader font size controls"
+              >
+                <button
+                  type="button"
+                  className="w-8 h-full flex items-center justify-center text-foreground hover:text-primary hover:bg-navbar-control-hover transition-colors border-0 bg-transparent cursor-pointer disabled:opacity-40"
+                  title="Decrease font size"
+                  disabled={textFontSize <= 12}
+                  onClick={decreaseFontSize}
+                >
+                  <ZoomOutIcon size={15} />
+                </button>
+
+                <button
+                  type="button"
+                  className="px-2.5 font-mono text-xs font-semibold text-foreground hover:text-primary hover:bg-navbar-control-hover border-y-0 border-x border-navbar-control-border h-full flex items-center justify-center transition-colors bg-transparent cursor-pointer"
+                  title="Reset font size to default (16px)"
+                  onClick={resetFontSize}
+                >
+                  {textFontSize}px
+                </button>
+
+                <button
+                  type="button"
+                  className="w-8 h-full flex items-center justify-center text-foreground hover:text-primary hover:bg-navbar-control-hover transition-colors border-0 bg-transparent cursor-pointer disabled:opacity-40"
+                  title="Increase font size"
+                  disabled={textFontSize >= 32}
+                  onClick={increaseFontSize}
+                >
+                  <ZoomInIcon size={15} />
+                </button>
+              </div>
+            ) : null}
 
             {/* Keyboard Shortcuts Trigger */}
             <button

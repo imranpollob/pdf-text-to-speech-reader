@@ -10,6 +10,7 @@ export const TextViewer = () => {
   const playbackStatus = useAudioStore((state) => state.playbackStatus);
   const autoScroll = useAudioStore((state) => state.autoScroll);
   const playSegment = useAudioStore((state) => state.playSegment);
+  const textFontSize = useAudioStore((state) => state.textFontSize);
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Line-tracking: Auto-scroll to current sentence during playback ONLY if autoScroll is enabled
@@ -44,16 +45,17 @@ export const TextViewer = () => {
     <div
       ref={containerRef}
       className={cn(
-        'w-full max-w-3xl mx-auto bg-surface border border-border rounded-2xl md:rounded-3xl',
-        'p-6 sm:p-10 md:p-14 text-base sm:text-lg leading-relaxed md:leading-[1.9] text-foreground shadow-lg',
+        'w-full mx-auto bg-surface border border-border rounded-2xl md:rounded-3xl',
+        'p-6 sm:p-10 md:p-12 leading-relaxed md:leading-[1.75] text-foreground shadow-md',
         'transition-all duration-200 focus:outline-none'
       )}
+      style={{ fontSize: `${textFontSize}px` }}
       tabIndex={0}
       aria-label="Text document reader content"
     >
-      <div className="space-y-6">
+      <div className="space-y-4 sm:space-y-5">
         {paragraphs.map((para) => (
-          <p key={para.paraIndex} className="m-0 leading-relaxed md:leading-[1.9]">
+          <p key={para.paraIndex} className="m-0 leading-relaxed md:leading-[1.75]">
             {para.items.map(({ segment, globalIndex }) => {
               const isPlaying = playbackStatus !== 'idle' && currentSegmentIndex === globalIndex;
               return (
@@ -64,10 +66,10 @@ export const TextViewer = () => {
                     tabIndex={0}
                     title="Click to read aloud from here"
                     className={cn(
-                      'cursor-pointer transition-colors duration-150 rounded px-1 py-0.5',
+                      'cursor-pointer transition-colors duration-150 rounded-xs',
                       'hover:bg-primary-subtle hover:text-primary',
                       isPlaying
-                        ? 'bg-primary/25 text-foreground font-medium'
+                        ? 'bg-primary/25 text-foreground font-medium px-1 py-0.5 -mx-1'
                         : 'text-foreground/90'
                     )}
                     onClick={() => playSegment(globalIndex)}
@@ -77,10 +79,7 @@ export const TextViewer = () => {
                         playSegment(globalIndex);
                       }
                     }}
-                  >
-                    {segment.text}
-                  </span>
-                  {segment.trailingNewlines === 1 ? <br /> : ' '}
+                  >{segment.text}</span>{segment.trailingNewlines === 1 ? <br /> : ' '}
                 </Fragment>
               );
             })}

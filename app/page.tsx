@@ -237,7 +237,7 @@ export default function Home() {
           'the-pdf-viewer relative w-full flex flex-col items-center',
           showEmptyState && 'max-w-6xl pt-4 sm:pt-6 pb-0'
         )}
-        style={{ maxWidth: file ? `${pdfMaxWidth}px` : undefined }}
+        style={{ maxWidth: !showEmptyState ? `${pdfMaxWidth}px` : undefined }}
       >
         {showEmptyState ? (
           <div className="w-full flex flex-col gap-10 sm:gap-14 animate-fade-in-slow">
@@ -635,11 +635,35 @@ export default function Home() {
               </div>
             </footer>
           </div>
-        ) : file ? (
+        ) : (
           <>
-            <div className="w-full pt-4 pb-28 sm:pb-32">
-              <PdfViewer file={file} />
-            </div>
+            {file ? (
+              <>
+                <div className="w-full pt-4 pb-28 sm:pb-32">
+                  <PdfViewer file={file} />
+                </div>
+
+                {/* Floating Page Navigator */}
+                <PageNavigator />
+              </>
+            ) : (
+              <div className="w-full mx-auto py-4 pb-28 sm:pb-32">
+                <div className="flex justify-between items-center mb-4 px-2">
+                  <span className="text-xs font-semibold text-muted uppercase tracking-wider">
+                    Text Reader Mode
+                  </span>
+                  <button
+                    type="button"
+                    className="px-3 py-1.5 rounded-lg bg-navbar-control border border-navbar-control-border text-xs font-semibold text-foreground hover:border-primary hover:text-primary transition-colors cursor-pointer flex items-center gap-1.5"
+                    onClick={handleTextEdit}
+                  >
+                    <EditIcon size={14} className="text-primary" />
+                    <span>Edit Text</span>
+                  </button>
+                </div>
+                <TextViewer />
+              </div>
+            )}
 
             {/* Desktop width resizer */}
             <div
@@ -648,27 +672,7 @@ export default function Home() {
               aria-orientation="vertical"
               title="Drag to resize reading width"
             />
-
-            {/* Floating Page Navigator */}
-            <PageNavigator />
           </>
-        ) : (
-          <div className="w-full max-w-3xl mx-auto py-4 pb-28 sm:pb-32">
-            <div className="flex justify-between items-center mb-4 px-2">
-              <span className="text-xs font-semibold text-muted uppercase tracking-wider">
-                Text Reader Mode
-              </span>
-              <button
-                type="button"
-                className="px-3 py-1.5 rounded-lg bg-navbar-control border border-navbar-control-border text-xs font-semibold text-foreground hover:border-primary hover:text-primary transition-colors cursor-pointer flex items-center gap-1.5"
-                onClick={handleTextEdit}
-              >
-                <EditIcon size={14} className="text-primary" />
-                <span>Edit Text</span>
-              </button>
-            </div>
-            <TextViewer />
-          </div>
         )}
       </div>
 

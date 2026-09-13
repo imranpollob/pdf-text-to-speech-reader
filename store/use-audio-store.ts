@@ -60,12 +60,20 @@ export const useAudioStore = create<AudioStore>((set, get) => ({
     const savedAutoScrollRaw = localStorage.getItem('autoScroll');
     const savedAutoScroll = savedAutoScrollRaw !== null ? savedAutoScrollRaw === 'true' : true;
 
+    const savedFontSizeRaw = localStorage.getItem('textFontSize');
+    let savedFontSize = 16;
+    if (savedFontSizeRaw) {
+      const parsed = parseInt(savedFontSizeRaw, 10);
+      if (!isNaN(parsed) && parsed >= 12 && parsed <= 32) savedFontSize = parsed;
+    }
+
     set({
       hydrated: true,
       selectedVoice: localStorage.getItem('selectedVoice') ?? null,
       playbackSpeed: savedSpeed,
       kokoroSpeed: savedSpeed,
       autoScroll: savedAutoScroll,
+      textFontSize: savedFontSize,
       ttsEngine: (localStorage.getItem('ttsEngine') as TtsEngine) ?? 'browser',
       kokoroVoice: localStorage.getItem('kokoroVoice') ?? 'af_heart',
       kokoroServerUrl: localStorage.getItem('kokoroServerUrl') ?? KOKORO_DEFAULT_URL,
@@ -281,5 +289,36 @@ export const useAudioStore = create<AudioStore>((set, get) => ({
   zoomIn: () => set(state => ({ scale: Math.min(3.5, +(state.scale * 1.2).toFixed(2)), isFitToWidth: false })),
   zoomOut: () => set(state => ({ scale: Math.max(0.5, +(state.scale / 1.2).toFixed(2)), isFitToWidth: false })),
   zoomReset: () => set({ scale: 1.5, isFitToWidth: false }),
+
+  // Text reader font size state (12px to 32px, default 16px)
+  textFontSize: 16,
+  setTextFontSize: (size: number) => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('textFontSize', size.toString());
+    }
+    set({ textFontSize: size });
+  },
+  increaseFontSize: () =>
+    set((state) => {
+      const next = Math.min(32, state.textFontSize + 2);
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('textFontSize', next.toString());
+      }
+      return { textFontSize: next };
+    }),
+  decreaseFontSize: () =>
+    set((state) => {
+      const next = Math.max(12, state.textFontSize - 2);
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('textFontSize', next.toString());
+      }
+      return { textFontSize: next };
+    }),
+  resetFontSize: () => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('textFontSize', '16');
+    }
+    set({ textFontSize: 16 });
+  },
 }));
 
