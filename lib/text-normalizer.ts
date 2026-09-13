@@ -1,19 +1,103 @@
-import { TextSegment } from '@/types';
+import type { TextSegment } from '../types';
 
 const ABBREVIATIONS = new Set([
-  'mr', 'mrs', 'ms', 'dr', 'prof', 'sr', 'jr', 'vs', 'etc', 'eg', 'ie', 'inc', 'ltd', 'corp', 'no', 'st', 'co', 'dept', 'univ', 'approx'
+  'mr', 'mrs', 'ms', 'dr', 'prof', 'sr', 'jr', 'rev', 'hon', 'st',
+  'vs', 'etc', 'eg', 'ie', 'cf', 'ca', 'approx', 'al',
+  'inc', 'ltd', 'corp', 'co', 'dept', 'univ',
+  'fig', 'figs', 'sec', 'secs', 'eq', 'eqs', 'tab', 'vol', 'vols', 'no', 'nos', 'pp', 'ch', 'chap', 'app'
 ]);
 
-/**
- * Check if the dot at position `i` belongs to an abbreviation (e.g., Dr., vs., etc.)
- */
-function isAbbreviationDot(chars: string[], i: number): boolean {
-  let wordStart = i - 1;
-  while (wordStart >= 0 && /[a-zA-Z]/.test(chars[wordStart])) {
-    wordStart--;
+function getWordBefore(chars: string[], i: number): string {
+  let end = i - 1;
+  while (end >= 0 && /\s/.test(chars[end])) end--;
+  let start = end;
+  while (start >= 0 && /[a-zA-Z0-9]/.test(chars[start])) start--;
+  return chars.slice(start + 1, end + 1).join('');
+}
+
+function isSingleInitial(chars: string[], i: number): boolean {
+  if (i === 1 && /[A-Z]/.test(chars[0])) return true;
+  if (i >= 2 && /[A-Z]/.test(chars[i - 1])) {
+    const prevChar = chars[i - 2];
+    let p = i - 2;
+    while (p >= 0 && /\s/.test(chars[p])) p--;
+    if (p >= 0 && /\d/.test(chars[p])) return false;
+
+    if (/[\s\(\[\.]/.test(prevChar)) return true;
   }
-  const word = chars.slice(wordStart + 1, i).join('').toLowerCase();
-  return ABBREVIATIONS.has(word);
+  return false;
+}
+
+/**
+ * Check if the dot at position `i` represents a genuine sentence boundary.
+ * Prevents false splits on decimals, URLs, version numbers, academic citations,
+ * single-letter initials, abbreviations, and lowercase continuations.
+ */
+function isSentenceEndPeriod(
+  chars: string[],
+  i: number,
+  parenDepth: number,
+  bracketDepth: number
+): boolean {
+  const prev = i > 0 ? chars[i - 1] : '';
+  const next = i + 1 < chars.length ? chars[i + 1] : '';
+
+  // 1. Decimals and software version numbers: e.g., 3.14, 10.5.6
+  if (/\d/.test(prev) && /\d/.test(next)) {
+    return false;
+  }
+
+  // 2. Trailing ellipsis: .. or ...
+  if (prev === '.' || next === '.') {
+    let nextNonDot = i + 1;
+    while (nextNonDot < chars.length && chars[nextNonDot] === '.') nextNonDot++;
+    let nextNonSpace = nextNonDot;
+    while (nextNonSpace < chars.length && /\s/.test(chars[nextNonSpace])) nextNonSpace++;
+    if (nextNonSpace < chars.length && /[a-z]/.test(chars[nextNonSpace])) {
+      return false;
+    }
+    if (next === '.') {
+      return false;
+    }
+  }
+
+  // 3. Dot inside non-whitespace token (e.g., domain name, file extension, URL, DOI, IP)
+  if (next && !/[\s"'\)\]\}]/.test(next)) {
+    return false;
+  }
+
+  // 4. Abbreviation or Single Initial check
+  const word = getWordBefore(chars, i).toLowerCase();
+  const isAbbr = ABBREVIATIONS.has(word);
+  const isInitial = isSingleInitial(chars, i);
+
+  let j = i + 1;
+  while (j < chars.length && /["'\)\]\s]/.test(chars[j])) j++;
+  const nextChar = j < chars.length ? chars[j] : '';
+  const isNextLowercase = /[a-z]/.test(nextChar);
+
+  if (isNextLowercase) {
+    return false;
+  }
+
+  if (parenDepth > 0 || bracketDepth > 0) {
+    if (isAbbr || isInitial) {
+      return false;
+    }
+  }
+
+  if (isInitial) {
+    return false;
+  }
+
+  if (isAbbr) {
+    const canEndSentence = (word === 'etc' || word === 'pm' || word === 'am');
+    if (!canEndSentence) {
+      return false;
+    }
+  }
+
+  return true;
 }
 
 /**
@@ -118,25 +202,29 @@ export function normalizeText(
     segStart = endExclusive;
   };
 
+  let parenDepth = 0;
+  let bracketDepth = 0;
+
   for (let i = 0; i < fullTextChars.length; i++) {
     const ch = fullTextChars[i];
+    if (ch === '(') parenDepth++;
+    else if (ch === ')') parenDepth = Math.max(0, parenDepth - 1);
+    else if (ch === '[') bracketDepth++;
+    else if (ch === ']') bracketDepth = Math.max(0, bracketDepth - 1);
+
     let isSentenceEnd = /[.!:?]/.test(ch);
 
-    // If this is a period:
-    // 1. Don't split decimals (e.g., 3.14)
-    // 2. Don't split common abbreviations (e.g., Dr., vs., etc.)
     if (isSentenceEnd && ch === '.') {
-      const prev = i > 0 ? fullTextChars[i - 1] : '';
-      const next = i + 1 < fullTextChars.length ? fullTextChars[i + 1] : '';
-      if (/\d/.test(prev) && /\d/.test(next)) {
-        isSentenceEnd = false;
-      } else if (isAbbreviationDot(fullTextChars, i)) {
-        isSentenceEnd = false;
-      }
+      isSentenceEnd = isSentenceEndPeriod(fullTextChars, i, parenDepth, bracketDepth);
     }
 
     if (isSentenceEnd) {
-      flushSegment(i + 1);
+      let end = i + 1;
+      while (end < fullTextChars.length && /["'\)\]]/.test(fullTextChars[end])) {
+        end++;
+      }
+      flushSegment(end);
+      i = end - 1;
     }
   }
 
@@ -161,25 +249,20 @@ function splitLineIntoSentences(line: string): string[] {
     start = endExclusive;
   };
 
+  let parenDepth = 0;
+  let bracketDepth = 0;
+
   for (let i = 0; i < chars.length; i++) {
     const ch = chars[i];
+    if (ch === '(') parenDepth++;
+    else if (ch === ')') parenDepth = Math.max(0, parenDepth - 1);
+    else if (ch === '[') bracketDepth++;
+    else if (ch === ']') bracketDepth = Math.max(0, bracketDepth - 1);
+
     let isSentenceEnd = /[.!?]/.test(ch);
 
     if (isSentenceEnd && ch === '.') {
-      const prev = i > 0 ? chars[i - 1] : '';
-      const next = i + 1 < chars.length ? chars[i + 1] : '';
-      if (/\d/.test(prev) && /\d/.test(next)) {
-        isSentenceEnd = false;
-      } else if (isAbbreviationDot(chars, i)) {
-        isSentenceEnd = false;
-      }
-    }
-
-    if (isSentenceEnd) {
-      const next = i + 1 < chars.length ? chars[i + 1] : '';
-      if (next && !/[\s"'\)\]]/.test(next)) {
-        isSentenceEnd = false;
-      }
+      isSentenceEnd = isSentenceEndPeriod(chars, i, parenDepth, bracketDepth);
     }
 
     if (isSentenceEnd) {

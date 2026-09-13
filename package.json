@@ -10,7 +10,8 @@
     "build": "next build",
     "build:gh": "NEXT_PUBLIC_BASE_PATH=/pdf-text-to-speech-reader next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test": "node tests/run.mjs"
   },
   "dependencies": {
     "idb-keyval": "^6.3.0",
