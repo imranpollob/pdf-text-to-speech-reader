@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import Image from 'next/image';
 import { useAudioStore } from '../store/use-audio-store';
 import { cn } from '../lib/cn';
@@ -12,6 +12,7 @@ import {
   SunIcon,
   MoonIcon,
   KeyboardIcon,
+  ClockIcon,
   CloseIcon,
 } from './Icons';
 
@@ -22,6 +23,7 @@ export default function Header() {
   const segments = useAudioStore((s) => s.segments);
   const loadSegments = useAudioStore((s) => s.loadSegments);
   const currentSegmentIndex = useAudioStore((s) => s.currentSegmentIndex);
+  const playbackSpeed = useAudioStore((s) => s.playbackSpeed);
   const scale = useAudioStore((s) => s.scale);
   const zoomIn = useAudioStore((s) => s.zoomIn);
   const zoomOut = useAudioStore((s) => s.zoomOut);
@@ -61,6 +63,47 @@ export default function Header() {
     setFile(null);
     loadSegments([]);
   };
+
+  // Estimated reading time listened and total (150 words/min speech rate adjusted for playback speed)
+  const timeMetrics = useMemo(() => {
+    if (!segments.length) return null;
+
+    const wordsPerMinute = 150 * playbackSpeed;
+
+    const formatTime = (words: number) => {
+      const minutes = words / wordsPerMinute;
+      if (words === 0) return '0m';
+      if (minutes < 1) return '<1m';
+      const roundMins = Math.round(minutes);
+      return `${roundMins}m`;
+    };
+
+    // Words listened up to current segment
+    const listenedSegments = segments.slice(0, currentSegmentIndex);
+    const listenedWords = listenedSegments.reduce(
+      (acc, seg) => acc + (seg.text.trim().split(/\s+/).filter(Boolean).length || 0),
+      0
+    );
+
+    // Total words in entire document
+    const totalWords = segments.reduce(
+      (acc, seg) => acc + (seg.text.trim().split(/\s+/).filter(Boolean).length || 0),
+      0
+    );
+
+    // Remaining words
+    const remainingSegments = segments.slice(currentSegmentIndex);
+    const remainingWords = remainingSegments.reduce(
+      (acc, seg) => acc + (seg.text.trim().split(/\s+/).filter(Boolean).length || 0),
+      0
+    );
+
+    return {
+      listened: formatTime(listenedWords),
+      total: formatTime(totalWords),
+      remaining: formatTime(remainingWords),
+    };
+  }, [segments, currentSegmentIndex, playbackSpeed]);
 
   return (
     <>
@@ -125,6 +168,19 @@ export default function Header() {
 
           {/* Right Header Tools */}
           <div className="flex items-center gap-2 shrink-0">
+            {/* Reading Time Metrics (Compact Listened / Total Duration) */}
+            {hasContent && timeMetrics && (
+              <div
+                className="hidden sm:inline-flex items-center gap-1 px-2.5 sm:px-3 py-1 rounded-full bg-navbar-control border border-navbar-control-border text-xs font-mono text-muted shadow-2xs animate-fade-in select-none"
+                title={`Reading Progress: ${timeMetrics.listened} listened of ${timeMetrics.total} total (~${timeMetrics.remaining} remaining)`}
+              >
+                <ClockIcon size={13} className="text-primary shrink-0" />
+                <span className="text-foreground/90 font-medium">{timeMetrics.listened}</span>
+                <span className="text-muted/50 font-normal">/</span>
+                <span>{timeMetrics.total}</span>
+              </div>
+            )}
+
             {/* Zoom Controls (Visible when PDF is loaded on screens >= 640px) */}
             {file && (
               <div
