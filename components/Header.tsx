@@ -171,7 +171,7 @@ export default function Header() {
           </div>
 
           {/* Right Header Tools */}
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="header-actions flex items-center gap-2 shrink-0">
             {/* Reading Time Metrics (Compact Listened / Total Duration) */}
             {hasContent && timeMetrics && (
               <div
@@ -304,6 +304,9 @@ export default function Header() {
                 <MoonIcon size={13} className="moon-icon" />
               </span>
             </button>
+
+            {/* Brand tools launcher mount (replaced by the waffle button from launcher.js) */}
+            <span data-brand-launcher></span>
           </div>
         </div>
       </header>
