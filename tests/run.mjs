@@ -6,4 +6,5 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const jiti = createJiti(process.cwd());
 
 jiti(path.resolve(__dirname, 'text-normalizer.test.ts'));
+jiti(path.resolve(__dirname, 'segment-hover.test.ts'));
 

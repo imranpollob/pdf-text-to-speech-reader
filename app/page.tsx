@@ -38,8 +38,6 @@ export default function Home() {
   const segments = useAudioStore((state) => state.segments);
   const playbackSpeed = useAudioStore((state) => state.playbackSpeed);
 
-  const [pdfMaxWidth, setPdfMaxWidth] = useState<number>(1080);
-
   const TEXT_CACHE_KEY = 'pdf-text-to-speech-reader-text-input';
   const [textInput, setTextInput] = useState('');
   const [textLoaded, setTextLoaded] = useState(false);
@@ -122,44 +120,6 @@ export default function Home() {
     fileInputRef.current?.click();
   };
 
-  // Desktop PDF viewer resizer logic
-  useEffect(() => {
-    let startX = 0;
-    let startWidth = 0;
-    let resizing = false;
-
-    const onPointerMove = (e: PointerEvent) => {
-      if (!resizing) return;
-      const dx = e.clientX - startX;
-      const next = Math.max(520, Math.min(1600, startWidth + dx));
-      setPdfMaxWidth(next);
-    };
-
-    const onPointerUp = () => {
-      resizing = false;
-      document.removeEventListener('pointermove', onPointerMove);
-      document.removeEventListener('pointerup', onPointerUp);
-    };
-
-    const el = document.querySelector('.the-pdf-viewer .resizer');
-    if (!el) return;
-
-    const onPointerDown = (ev: PointerEvent) => {
-      resizing = true;
-      startX = ev.clientX;
-      startWidth =
-        (document.querySelector('.the-pdf-viewer') as HTMLElement)?.clientWidth ||
-        pdfMaxWidth;
-      document.addEventListener('pointermove', onPointerMove);
-      document.addEventListener('pointerup', onPointerUp);
-    };
-
-    el.addEventListener('pointerdown', onPointerDown as EventListener);
-    return () => {
-      el.removeEventListener('pointerdown', onPointerDown as EventListener);
-    };
-  }, [pdfMaxWidth]);
-
   const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     setDragActive(false);
@@ -234,10 +194,9 @@ export default function Home() {
     <main className="w-full flex flex-col items-center min-h-[calc(100vh-64px)] px-4 sm:px-6">
       <div
         className={cn(
-          'the-pdf-viewer relative w-full flex flex-col items-center',
+          'relative w-full flex flex-col items-center',
           showEmptyState && 'max-w-6xl pt-4 sm:pt-6 pb-0'
         )}
-        style={{ maxWidth: !showEmptyState ? `${pdfMaxWidth}px` : undefined }}
       >
         {showEmptyState ? (
           <div className="w-full flex flex-col gap-10 sm:gap-14 animate-fade-in-slow">
@@ -647,7 +606,7 @@ export default function Home() {
                 <PageNavigator />
               </>
             ) : (
-              <div className="w-full mx-auto py-4 pb-28 sm:pb-32">
+              <div className="w-full max-w-4xl mx-auto py-4 pb-28 sm:pb-32">
                 <div className="flex justify-between items-center mb-4 px-2">
                   <span className="text-xs font-semibold text-muted uppercase tracking-wider">
                     Text Reader Mode
@@ -665,13 +624,6 @@ export default function Home() {
               </div>
             )}
 
-            {/* Desktop width resizer */}
-            <div
-              className="resizer absolute -right-2 top-10 bottom-10 w-3.5 cursor-ew-resize z-[500] flex items-center justify-center max-md:hidden after:content-[''] after:w-1 after:h-12 after:rounded-full after:bg-border after:transition-colors hover:after:bg-primary"
-              role="separator"
-              aria-orientation="vertical"
-              title="Drag to resize reading width"
-            />
           </>
         )}
       </div>

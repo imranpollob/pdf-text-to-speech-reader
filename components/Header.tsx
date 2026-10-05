@@ -115,7 +115,7 @@ export default function Header() {
         className="fixed top-0 left-0 right-0 h-16 z-[1000] bg-navbar/95 backdrop-blur-md border-b border-navbar-border shadow-xs transition-[background-color,border-color] duration-200"
         role="banner"
       >
-        <div className="w-full max-w-7xl h-full mx-auto flex items-center justify-between gap-3 px-4 sm:px-6">
+        <div className="w-full h-full flex items-center justify-between gap-3 px-4 sm:px-6">
           {/* Brand & Document identification */}
           <div className="flex items-center gap-3 min-w-0">
             <button

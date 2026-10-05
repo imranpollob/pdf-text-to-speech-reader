@@ -5,6 +5,7 @@ import * as pdfjsLib from 'pdfjs-dist';
 import { TextLayerBuilder } from 'pdfjs-dist/web/pdf_viewer.mjs';
 import 'pdfjs-dist/web/pdf_viewer.css';
 import { normalizeText } from '../lib/text-normalizer';
+import { resolveHoverAction } from '../lib/segment-hover';
 import { useAudioStore } from '../store/use-audio-store';
 import type { TextSegment } from '../types';
 
@@ -166,6 +167,13 @@ export const PdfViewer = ({ file }: PdfViewerProps) => {
 
       container.innerHTML = ''; // Clear previous content
 
+      // Inner content box: at least as wide as the scroll viewport so pages
+      // stay centered when they fit, and grows with zoomed pages so the
+      // viewport's horizontal scrollbar can pan across their full width.
+      const contentWrapper = document.createElement('div');
+      contentWrapper.className = 'w-max min-w-full flex flex-col items-center px-1';
+      container.appendChild(contentWrapper);
+
       const allSegments: TextSegment[] = [];
       let segmentOffset = 0;
       const dpr = typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1;
@@ -197,7 +205,7 @@ export const PdfViewer = ({ file }: PdfViewerProps) => {
         pageContainer.id = `pdf-page-${pageNum}`;
         pageContainer.setAttribute('data-page-number', pageNum.toString());
         pageContainer.className =
-          'relative mb-6 shadow-[0_4px_20px_rgba(0,0,0,0.1)] bg-white rounded-xl overflow-hidden max-w-full';
+          'relative mb-6 shadow-[0_4px_20px_rgba(0,0,0,0.1)] bg-white rounded-xl overflow-hidden shrink-0';
         pageContainer.style.width = `${viewport.width}px`;
         pageContainer.style.height = `${viewport.height}px`;
 
@@ -297,7 +305,7 @@ export const PdfViewer = ({ file }: PdfViewerProps) => {
         }
 
         if (isCancelled) return;
-        container.appendChild(pageContainer);
+        contentWrapper.appendChild(pageContainer);
 
         allSegments.push(...pageSegments);
         segmentOffset += pageSegments.length;
@@ -343,13 +351,12 @@ export const PdfViewer = ({ file }: PdfViewerProps) => {
     const handlePointerOver = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
       const sentenceElement = target.closest('nr-sentence');
-      if (!sentenceElement) return;
-
-      const segmentIndex = sentenceElement.getAttribute('data-na-sen-ind');
-      if (!segmentIndex) return;
-
-      if (segmentIndex !== hoveredSegmentIndex) {
-        setHoveredSegment(segmentIndex);
+      const foundIndex = sentenceElement?.getAttribute('data-na-sen-ind') || null;
+      const action = resolveHoverAction(foundIndex, hoveredSegmentIndex);
+      if (action.type === 'clear') {
+        setHoveredSegment(null);
+      } else if (action.type === 'switch') {
+        setHoveredSegment(action.index);
       }
     };
 
@@ -412,8 +419,8 @@ export const PdfViewer = ({ file }: PdfViewerProps) => {
   }
 
   return (
-    <div className="flex flex-col items-center gap-4 w-full relative">
-      <div ref={containerRef} className="flex flex-col items-center w-full max-w-full overflow-x-auto" />
+    <div className="w-full relative">
+      <div ref={containerRef} className="w-full overflow-x-auto" />
     </div>
   );
 };
