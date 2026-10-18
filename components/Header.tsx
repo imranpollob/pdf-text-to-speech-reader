@@ -52,6 +52,16 @@ export default function Header() {
     });
   }, []);
 
+  // Load the brand launcher only after hydration; it replaces [data-brand-launcher] in the DOM.
+  useEffect(() => {
+    const src = 'https://imranpollob.github.io/personal-brand-theme/launcher.js';
+    if (document.querySelector(`script[src="${src}"]`)) return;
+    const script = document.createElement('script');
+    script.src = src;
+    script.async = true;
+    document.body.append(script);
+  }, []);
+
   const toggleTheme = () => {
     const next = theme === 'dark' ? 'light' : 'dark';
     setTheme(next);
@@ -305,8 +315,11 @@ export default function Header() {
               </span>
             </button>
 
-            {/* Brand tools launcher mount (replaced by the waffle button from launcher.js) */}
-            <span data-brand-launcher></span>
+            {/* Brand tools launcher mount (replaced by the waffle button from launcher.js, which is
+                injected after hydration so React never sees the swapped DOM) */}
+            <div className="contents" suppressHydrationWarning>
+              <span data-brand-launcher></span>
+            </div>
           </div>
         </div>
       </header>
