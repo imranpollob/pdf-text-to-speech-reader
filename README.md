@@ -1,11 +1,11 @@
 # PDF Text to Speech Reader 📄🔊
 
-A PDF and text reader with text-to-speech capabilities. Upload PDFs or paste text, click sentences, and listen with synchronized highlighting.
+A document and text reader with text-to-speech capabilities. Upload PDFs, Markdown, TXT, or DOCX files, or paste text, then listen with synchronized highlighting.
 
 ## ✨ Features
 
-- **📖 PDF Rendering** — drag & drop upload with zoom controls
-- **📝 Text Mode** — paste plain text and read it aloud
+- **📖 Document Reading** — upload PDFs, Markdown, TXT, or DOCX files; PDFs include zoom controls
+- **📝 Text Mode** — paste plain text or upload text documents and read them aloud
 - **🤖 Kokoro TTS** — local, high-quality neural TTS via a Python backend (50 voices)
 - **🔊 Browser TTS** — zero-setup fallback using the Web Speech API
 - **🎯 Interactive Highlighting** — click any sentence to jump to it
@@ -49,8 +49,8 @@ The server runs at `http://localhost:8880`. In the app, open the voice popover a
 
 ## 📖 Usage
 
-1. **PDF mode** — drag & drop a PDF onto the upload area
-2. **Text mode** — click **Paste Text**, enter your text, press **🔊 Read Aloud**
+1. **Upload a document** — drag and drop a PDF, Markdown, TXT, or DOCX file onto the upload area
+2. **Paste text** — enter your text and open it in the reader
 3. Click any sentence to start playback from that point
 4. Use the audio bar: ▶ Play/Pause, ◀ Previous, ▶ Next sentence
 5. Open the 💬 voice popover to switch between Browser and Kokoro voices
@@ -63,6 +63,8 @@ The server runs at `http://localhost:8880`. In the app, open the voice popover a
 | Styling     | Tailwind CSS v4                   |
 | State       | Zustand 5                         |
 | PDF         | PDF.js 5                          |
+| Markdown    | markdown-it                        |
+| DOCX        | Mammoth.js                         |
 | Caching     | IndexedDB (idb-keyval)            |
 | Local TTS   | kokoro-onnx 0.5, FastAPI, uvicorn |
 | Browser TTS | Web Speech API                    |

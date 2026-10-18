@@ -4,10 +4,12 @@ import React, { useState, useEffect, useRef } from 'react';
 import dynamic from 'next/dynamic';
 import { AudioEngine } from '../components/AudioEngine';
 import { TextViewer } from '../components/TextViewer';
+import { FormattedDocumentViewer } from '../components/FormattedDocumentViewer';
 import { PlayerBar } from '../components/PlayerBar';
 import { PageNavigator } from '../components/PageNavigator';
 import { useAudioStore } from '../store/use-audio-store';
 import { normalizeRawText } from '../lib/text-normalizer';
+import { readDocumentFile } from '../lib/document-import';
 import { cn } from '../lib/cn';
 import {
   UploadCloudIcon,
@@ -42,6 +44,9 @@ export default function Home() {
   const [textInput, setTextInput] = useState('');
   const [textLoaded, setTextLoaded] = useState(false);
   const [isLoadingSample, setIsLoadingSample] = useState(false);
+  const [isImportingDocument, setIsImportingDocument] = useState(false);
+  const [fileError, setFileError] = useState<string | null>(null);
+  const [formattedHtml, setFormattedHtml] = useState<string | null>(null);
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
 
   // Restore cached text
@@ -50,12 +55,40 @@ export default function Home() {
     if (cached) setTextInput(cached);
   }, []);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const selected = e.target.files[0];
+  const openDocumentFile = async (selected: File) => {
+    const extension = selected.name.split('.').pop()?.toLowerCase();
+    setFileError(null);
+
+    if (extension === 'pdf' || selected.type === 'application/pdf') {
+      setFormattedHtml(null);
       setFile(selected);
       setTextLoaded(false);
+      return;
     }
+
+    setIsImportingDocument(true);
+    try {
+      const imported = await readDocumentFile(selected);
+      const segs = normalizeRawText(imported.text);
+      if (!segs.length) throw new Error('No readable text was found in this document.');
+
+      setFile(null);
+      setTextInput(imported.text);
+      setFormattedHtml(imported.html);
+      setDocumentTitle(selected.name);
+      loadSegments(segs);
+      setTextLoaded(true);
+    } catch (error) {
+      setFileError(error instanceof Error ? error.message : 'Could not read this document.');
+    } finally {
+      setIsImportingDocument(false);
+    }
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selected = e.target.files?.[0];
+    e.currentTarget.value = '';
+    if (selected) void openDocumentFile(selected);
   };
 
   const handleLoadSamplePdf = async () => {
@@ -69,6 +102,7 @@ export default function Home() {
         type: 'application/pdf',
       });
       setFile(sampleFile);
+      setFormattedHtml(null);
       setTextLoaded(false);
     } catch (e) {
       console.error('Error loading sample PDF:', e);
@@ -87,6 +121,7 @@ export default function Home() {
 
   const handleTextLoad = () => {
     if (!textInput.trim()) return;
+    setFormattedHtml(null);
     const segs = normalizeRawText(textInput);
     setDocumentTitle('Pasted Text Document');
     loadSegments(segs);
@@ -95,6 +130,7 @@ export default function Home() {
   };
 
   const handleTextEdit = () => {
+    setFormattedHtml(null);
     setTextLoaded(false);
     loadSegments([]);
   };
@@ -124,14 +160,7 @@ export default function Home() {
     e.preventDefault();
     setDragActive(false);
     if (e.dataTransfer?.files && e.dataTransfer.files[0]) {
-      const droppedFile = e.dataTransfer.files[0];
-      if (
-        droppedFile.type === 'application/pdf' ||
-        droppedFile.name.endsWith('.pdf')
-      ) {
-        setFile(droppedFile);
-        setTextLoaded(false);
-      }
+      void openDocumentFile(e.dataTransfer.files[0]);
     }
   };
 
@@ -165,8 +194,8 @@ export default function Home() {
       a: 'Yes. The application is free and open-source. Processing happens in your browser with no account or registration required.',
     },
     {
-      q: 'Are my PDFs uploaded to a server?',
-      a: 'No. PDFs and pasted text are parsed and rendered directly in your browser. Your documents are never uploaded to our servers.',
+      q: 'Are my documents uploaded to a server?',
+      a: 'No. PDFs, Markdown, TXT, and DOCX documents are processed directly in your browser. Your documents are never uploaded to our servers.',
     },
     {
       q: 'What types of PDFs are supported?',
@@ -210,7 +239,7 @@ export default function Home() {
               </h1>
 
               <p className="mt-4 text-base sm:text-lg text-muted max-w-2xl mx-auto leading-relaxed">
-                Turn PDFs and pasted text into speech. Follow along with synchronized sentence highlighting,
+                Turn PDFs, Markdown, TXT, DOCX, and pasted text into speech. Follow along with synchronized sentence highlighting,
                 jump to any sentence, and adjust the voice and playback speed.
               </p>
             </section>
@@ -225,12 +254,12 @@ export default function Home() {
                   Choose How You Want to Read
                 </h2>
                 <p className="text-sm text-muted mt-1">
-                  Upload a PDF or paste text to start listening.
+                  Upload a document or paste text to start listening.
                 </p>
               </div>
 
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
-                {/* Feature 1: Upload PDF File */}
+                {/* Feature 1: Upload Document File */}
                 <div
                   className={cn(
                     'bg-surface border border-border rounded-2xl md:rounded-3xl p-6 sm:p-8 flex flex-col shadow-sm transition-all duration-200 hover:border-primary hover:shadow-md',
@@ -244,7 +273,7 @@ export default function Home() {
                   <input
                     ref={fileInputRef}
                     type="file"
-                    accept="application/pdf"
+                    accept=".pdf,.md,.markdown,.txt,.docx,application/pdf,text/markdown,text/plain,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
                     onChange={handleFileChange}
                     className="hidden"
                   />
@@ -255,14 +284,14 @@ export default function Home() {
                     </div>
                     <div>
                       <h3 className="font-heading text-xl font-bold text-foreground leading-tight">
-                        Upload PDF
+                        Upload a Document
                       </h3>
                       <span className="text-xs text-muted">Research papers, books, essays, and reports</span>
                     </div>
                   </div>
 
                   <p className="text-sm text-muted mb-6 leading-relaxed">
-                    Drag and drop a PDF here, or choose a file from your device. The document is processed
+                    Choose a PDF, Markdown, TXT, or DOCX file, or drag it here. The document is processed
                     for reading and synchronized sentence playback.
                   </p>
 
@@ -280,10 +309,17 @@ export default function Home() {
                   >
                     <UploadCloudIcon size={32} className="text-primary mb-2 transition-transform duration-200 group-hover:scale-110" />
                     <span className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors">
-                      Choose a PDF
+                      Choose a document
                     </span>
-                    <span className="text-xs text-muted mt-0.5">or drag and drop it here</span>
+                    <span className="text-xs text-muted mt-0.5">PDF, MD, TXT, DOCX, or drop a file here</span>
                   </div>
+
+                  {fileError && (
+                    <p role="alert" className="text-sm text-error mb-3">{fileError}</p>
+                  )}
+                  {isImportingDocument && (
+                    <p role="status" className="text-sm text-muted mb-3">Reading document…</p>
+                  )}
 
                   <div className="flex flex-wrap items-center gap-2 justify-between pt-2 border-t border-border/60">
                     <div className="flex gap-2">
@@ -303,7 +339,7 @@ export default function Home() {
                       className="px-5 py-2.5 rounded-xl bg-primary text-white font-semibold text-sm shadow-md hover:bg-primary-hover hover:scale-102 active:scale-98 transition-all cursor-pointer border-0"
                       onClick={handleDropAreaClick}
                     >
-                      Choose PDF
+                      Choose File
                     </button>
                   </div>
                 </div>
@@ -415,7 +451,7 @@ export default function Home() {
                     Upload or Paste
                   </h3>
                   <p className="text-sm text-muted leading-relaxed">
-                    Upload a PDF or paste your text into the reader.
+                    Upload a document or paste your text into the reader.
                   </p>
                 </div>
 
@@ -472,7 +508,7 @@ export default function Home() {
                     Local PDF Processing
                   </h3>
                   <p className="text-sm sm:text-base text-muted leading-relaxed">
-                    PDFs and pasted text are processed in your browser. Local Kokoro voices also run directly on your device.
+                    Documents and pasted text are processed in your browser. Local Kokoro voices also run directly on your device.
                   </p>
                 </div>
 
@@ -609,7 +645,7 @@ export default function Home() {
               <div className="w-full max-w-4xl mx-auto py-4 pb-28 sm:pb-32">
                 <div className="flex justify-between items-center mb-4 px-2">
                   <span className="text-xs font-semibold text-muted uppercase tracking-wider">
-                    Text Reader Mode
+                    Document Reader Mode
                   </span>
                   <button
                     type="button"
@@ -620,7 +656,11 @@ export default function Home() {
                     <span>Edit Text</span>
                   </button>
                 </div>
-                <TextViewer />
+                {formattedHtml ? (
+                  <FormattedDocumentViewer html={formattedHtml} segments={segments} />
+                ) : (
+                  <TextViewer />
+                )}
               </div>
             )}
 

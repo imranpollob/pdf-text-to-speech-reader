@@ -387,3 +387,110 @@ nr-sentence.playing,
   width: 17px;
   height: 17px;
 }
+
+.formatted-document {
+  line-height: 1.75;
+  overflow-wrap: anywhere;
+}
+
+.formatted-document > :first-child { margin-top: 0; }
+.formatted-document > :last-child { margin-bottom: 0; }
+
+.formatted-document h1,
+.formatted-document h2,
+.formatted-document h3,
+.formatted-document h4,
+.formatted-document h5,
+.formatted-document h6 {
+  color: var(--color-text);
+  font-family: var(--font-heading);
+  font-weight: 700;
+  line-height: 1.25;
+  margin: 1.5em 0 0.65em;
+}
+
+.formatted-document h1 { font-size: 2em; }
+.formatted-document h2 { font-size: 1.65em; }
+.formatted-document h3 { font-size: 1.35em; }
+.formatted-document h4,
+.formatted-document h5,
+.formatted-document h6 { font-size: 1.1em; }
+
+.formatted-document p,
+.formatted-document ul,
+.formatted-document ol,
+.formatted-document blockquote,
+.formatted-document pre,
+.formatted-document table {
+  margin: 0 0 1em;
+}
+
+.formatted-document ul,
+.formatted-document ol {
+  padding-left: 1.6em;
+}
+
+.formatted-document ul { list-style: disc; }
+.formatted-document ol { list-style: decimal; }
+.formatted-document li + li { margin-top: 0.35em; }
+
+.formatted-document blockquote {
+  border-left: 3px solid var(--color-primary);
+  color: var(--color-muted);
+  padding-left: 1em;
+}
+
+.formatted-document pre,
+.formatted-document code {
+  border-radius: 0.35rem;
+  background: var(--navbar-control-bg);
+  font-family: var(--font-mono);
+}
+
+.formatted-document pre {
+  overflow-x: auto;
+  padding: 1em;
+  white-space: pre-wrap;
+}
+
+.formatted-document code { padding: 0.12em 0.3em; }
+.formatted-document pre code { padding: 0; }
+
+.formatted-document a {
+  color: var(--color-primary);
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+}
+
+.formatted-document table {
+  border-collapse: collapse;
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.formatted-document th,
+.formatted-document td {
+  border: 1px solid var(--color-border);
+  padding: 0.5em 0.75em;
+  text-align: left;
+  vertical-align: top;
+}
+
+.formatted-document th { background: var(--navbar-control-bg); }
+.formatted-document img { height: auto; max-width: 100%; }
+.formatted-document hr { border: 0; border-top: 1px solid var(--color-border); margin: 1.5em 0; }
+
+.formatted-document .document-segment {
+  border-radius: 3px;
+  cursor: pointer;
+  transition: background-color 120ms ease;
+}
+
+.formatted-document .document-segment:hover {
+  background: color-mix(in srgb, var(--highlight-bg) 55%, transparent);
+}
+
+.formatted-document .document-segment.playing {
+  background: var(--highlight-hover);
+}

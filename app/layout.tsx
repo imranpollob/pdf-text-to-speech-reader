@@ -35,13 +35,15 @@ export const metadata: Metadata = {
   metadataBase: new URL("https://imranpollob.github.io/pdf-text-to-speech-reader/"),
   title: "PDF & Text to Speech Reader | Free Online Audio Reader",
   description:
-    "Free, open-source PDF and text reader with synchronized sentence highlighting. Listen to PDFs and pasted text in your browser with neural and system voices.",
+    "Free, open-source document and text reader with synchronized sentence highlighting. Listen to PDFs, Markdown, TXT, DOCX, and pasted text in your browser.",
   keywords: [
     "PDF text to speech",
     "paste text to speech",
     "text to speech online",
     "read PDF aloud free",
     "listen to plain text",
+    "Markdown text to speech",
+    "DOCX text to speech",
     "PDF audio reader",
     "free TTS reader",
     "neural speech synthesis",
@@ -73,7 +75,7 @@ export const metadata: Metadata = {
     url: "https://imranpollob.github.io/pdf-text-to-speech-reader/",
     title: "PDF & Text to Speech Reader — Free Online Audio Document Reader",
     description:
-      "Listen to PDFs and pasted text with synchronized sentence highlighting, adjustable speed, and neural or system voices.",
+      "Listen to PDFs, Markdown, TXT, DOCX, and pasted text with synchronized sentence highlighting, adjustable speed, and neural or system voices.",
     siteName: "PDF Text to Speech Reader",
     images: [
       {
@@ -89,7 +91,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "PDF & Text to Speech Reader — Free Online Audio Document Reader",
     description:
-      "Listen to PDFs and pasted text with synchronized sentence highlighting, adjustable speed, and neural or system voices.",
+      "Listen to PDFs, Markdown, TXT, DOCX, and pasted text with synchronized sentence highlighting, adjustable speed, and neural or system voices.",
     images: ["./og-image.png"],
     creator: "@imranpollob",
   },
@@ -114,7 +116,7 @@ const jsonLd = {
       name: "PDF Text to Speech Reader",
       url: "https://imranpollob.github.io/pdf-text-to-speech-reader/",
       description:
-        "Free, privacy-friendly PDF and text reader with synchronized sentence highlighting and neural voices.",
+        "Free, privacy-friendly reader for PDFs, Markdown, TXT, DOCX, and pasted text with synchronized sentence highlighting and neural voices.",
       image: "https://imranpollob.github.io/pdf-text-to-speech-reader/og-image.png",
       applicationCategory: "MultimediaApplication",
       operatingSystem: "Any",
@@ -151,10 +153,10 @@ const jsonLd = {
         },
         {
           "@type": "Question",
-          name: "Are my PDFs uploaded to a server?",
+          name: "Are my documents uploaded to a server?",
           acceptedAnswer: {
             "@type": "Answer",
-            text: "No. PDFs and pasted text are parsed and rendered directly in your browser. Your documents are never uploaded to our servers.",
+            text: "No. PDFs, Markdown, TXT, and DOCX documents are processed directly in your browser. Your documents are never uploaded to our servers.",
           },
         },
         {
