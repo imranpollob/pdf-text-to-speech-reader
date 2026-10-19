@@ -1,7 +1,7 @@
 {
-  "name": "PDF Text to Speech Reader",
-  "short_name": "PDF TTS Reader",
-  "description": "Intelligent PDF & text reader with synchronized text-to-speech, interactive sentence highlighting, and smart line tracking.",
+  "name": "ReadAloud",
+  "short_name": "ReadAloud",
+  "description": "ReadAloud: free PDF & text to speech reader for PDF, DOCX, TXT and Markdown with synchronized sentence highlighting.",
   "start_url": "./",
   "display": "standalone",
   "background_color": "#071311",
@@ -26,4 +26,3 @@
     }
   ]
 }
-

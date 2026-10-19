@@ -24,7 +24,6 @@ import {
   ShieldIcon,
   AutoScrollIcon,
   VoiceIcon,
-  SmartphoneIcon,
 } from '../components/Icons';
 
 const PdfViewer = dynamic(
@@ -48,11 +47,21 @@ export default function Home() {
   const [fileError, setFileError] = useState<string | null>(null);
   const [formattedHtml, setFormattedHtml] = useState<string | null>(null);
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
+  const [demoIndex, setDemoIndex] = useState(0);
+  const [demoPlaying, setDemoPlaying] = useState(true);
+
+  // Cycle the highlighting preview (paused for reduced-motion users)
+  useEffect(() => {
+    if (!demoPlaying) return;
+    if (typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const id = window.setInterval(() => setDemoIndex((i) => (i + 1) % 3), 2200);
+    return () => window.clearInterval(id);
+  }, [demoPlaying]);
 
   // Restore cached text
   useEffect(() => {
     const cached = localStorage.getItem(TEXT_CACHE_KEY);
-    if (cached) setTextInput(cached);
+    if (cached) setTextInput(cached.replaceAll('PDF Text to Speech Reader', 'ReadAloud'));
   }, []);
 
   const openDocumentFile = async (selected: File) => {
@@ -98,7 +107,7 @@ export default function Home() {
       const response = await fetch(`${basePath}/hello.pdf`);
       if (!response.ok) throw new Error('Sample PDF not found');
       const blob = await response.blob();
-      const sampleFile = new File([blob], 'Secure-BSM-Research-Paper.pdf', {
+      const sampleFile = new File([blob], 'ReadAloud-Sample.pdf', {
         type: 'application/pdf',
       });
       setFile(sampleFile);
@@ -112,7 +121,7 @@ export default function Home() {
   };
 
   const handleLoadSampleText = () => {
-    const sample = `Paste any text here and open it in the reader. As the audio plays, the current sentence will be highlighted automatically. You can also select any sentence to start listening from that point.`;
+    const sample = `Welcome to ReadAloud. This is sample text, so you can try listening right away. Open it in the reader, press play, and follow along as each sentence is highlighted. You can also select any sentence to start listening from that point.`;
     setTextInput(sample);
     try {
       localStorage.setItem(TEXT_CACHE_KEY, sample);
@@ -190,32 +199,32 @@ export default function Home() {
 
   const faqs = [
     {
-      q: 'Is it free and private?',
-      a: 'Yes. The application is free and open-source. Processing happens in your browser with no account or registration required.',
+      q: 'Is ReadAloud free?',
+      a: 'Yes. ReadAloud is free and open-source, with no account required. Document files are parsed in your browser.',
     },
     {
-      q: 'Are my documents uploaded to a server?',
-      a: 'No. PDFs, Markdown, TXT, and DOCX documents are processed directly in your browser. Your documents are never uploaded to our servers.',
+      q: 'Are my documents uploaded?',
+      a: 'Document files are parsed in your browser and are not uploaded by ReadAloud. If you enable the optional Kokoro voices, sentences are sent to the Kokoro server URL you configure to generate audio.',
     },
     {
-      q: 'What types of PDFs are supported?',
-      a: 'Any standard digital PDF containing readable text is supported (such as research papers, textbooks, and reports). Scanned image-only PDFs without an embedded text layer are not currently supported unless OCR has already been applied.',
+      q: 'Which formats are supported?',
+      a: 'PDF, DOCX, TXT and Markdown files with selectable text, plus text you paste. Scanned image-only PDFs need OCR first, because they have no text layer to read.',
     },
     {
-      q: 'Can I paste text instead of uploading a PDF?',
-      a: 'Yes. You can paste or type text directly into the reader and listen with the same synchronized sentence highlighting and audio controls.',
+      q: 'Can I paste text instead of uploading?',
+      a: 'Yes. Paste or type text to listen with the same synchronized highlighting and playback controls.',
     },
     {
       q: 'How does synchronized highlighting work?',
-      a: 'As audio plays, the current sentence is highlighted and scrolled into view. You can also select any sentence to jump playback directly to that point.',
+      a: 'The sentence being spoken is highlighted as you listen. Select any sentence to start playback from there.',
     },
     {
-      q: 'What voices are available?',
-      a: 'You can use voices provided by your browser and operating system, or connect to the optional local Kokoro engine for 50+ neural voices running directly on your device.',
+      q: 'Which voices can I use?',
+      a: 'Use voices from your browser and operating system, or connect an optional Kokoro server you run for additional neural voices. Playback speed runs from 0.75x to 2x.',
     },
     {
-      q: 'Does it work on phones and tablets?',
-      a: 'Yes. The interface is optimized for mobile screens with touch-friendly controls, auto-fit PDF page scaling, and a bottom playback bar.',
+      q: 'Does ReadAloud work on phones and tablets?',
+      a: 'Yes. Controls are touch-friendly, PDF pages fit your screen, and playback stays in a bottom bar.',
     },
   ];
 
@@ -224,28 +233,93 @@ export default function Home() {
       <div
         className={cn(
           'relative w-full flex flex-col items-center',
-          showEmptyState && 'max-w-6xl pt-4 sm:pt-6 pb-0'
+          showEmptyState && 'max-w-7xl pt-4 sm:pt-6 pb-0'
         )}
       >
         {showEmptyState ? (
-          <div className="w-full flex flex-col gap-10 sm:gap-14 animate-fade-in-slow">
+          <div className="w-full flex flex-col gap-8 sm:gap-10 animate-fade-in-slow">
             {/* Hero Section */}
             <section
-              className="text-center flex flex-col items-center pt-4 max-w-3xl mx-auto"
-              aria-label="PDF Text to Speech Reader Overview"
+              className="text-center flex flex-col items-center pt-2 max-w-3xl mx-auto w-full"
+              aria-label="ReadAloud overview"
             >
-              <h1 className="font-heading text-3xl sm:text-4xl md:text-5xl lg:text-5xl leading-[1.15] font-extrabold text-foreground tracking-tight">
-                Listen to <span className="text-primary">PDFs &amp; Text</span> with Synchronized Highlighting
+              <p className="text-sm sm:text-base font-semibold text-primary">Listen, Read, Follow Along.</p>
+
+              <h1 className="mt-2 font-heading text-3xl sm:text-4xl md:text-5xl leading-[1.15] font-extrabold text-foreground tracking-tight">
+                Listen to any document, sentence by sentence.
               </h1>
 
               <p className="mt-4 text-base sm:text-lg text-muted max-w-2xl mx-auto leading-relaxed">
-                Turn PDFs, Markdown, TXT, DOCX, and pasted text into speech. Follow along with synchronized sentence highlighting,
-                jump to any sentence, and adjust the voice and playback speed.
+                Spend less time staring at long documents. Upload a file or paste text, choose a voice and speed, and listen hands-free.
               </p>
+
+              <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+                <button
+                  type="button"
+                  onClick={handleLoadSamplePdf}
+                  disabled={isLoadingSample}
+                  className="px-6 py-3 rounded-xl bg-primary text-on-primary font-semibold text-base shadow-md hover:bg-primary-hover transition-colors cursor-pointer border-0 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isLoadingSample ? 'Loading sample\u2026' : 'Try Sample Document'}
+                </button>
+                <a
+                  href="#upload-dropzone"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    const el = document.getElementById('upload-dropzone');
+                    if (!el) return;
+                    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+                    el.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'center' });
+                    el.focus({ preventScroll: true });
+                  }}
+                  className="px-6 py-3 rounded-xl bg-surface border border-border text-foreground font-semibold text-base hover:border-primary hover:text-primary transition-colors"
+                >
+                  Upload or Paste Text
+                </a>
+              </div>
+              <p className="mt-3 text-base text-muted">No account needed. Documents are parsed locally in your browser.</p>
+
+              <ul className="mt-5 flex flex-wrap justify-center gap-2 list-none p-0" aria-label="Supported formats">
+                {['PDF', 'DOCX', 'TXT', 'Markdown', 'Pasted text'].map((f) => (
+                  <li key={f} className="px-3 py-1 rounded-full bg-primary-subtle text-primary text-sm font-semibold">{f}</li>
+                ))}
+              </ul>
+
+              {/* Compact synchronized-highlighting preview */}
+              <div className="mt-7 w-full max-w-2xl text-left bg-surface border border-border rounded-2xl p-5 sm:p-6 shadow-sm">
+                <div className="flex items-center justify-between gap-3 mb-3">
+                  <span className="font-heading font-bold text-base text-foreground">Preview: synchronized highlighting</span>
+                  <button
+                    type="button"
+                    onClick={() => setDemoPlaying((v) => !v)}
+                    aria-label={demoPlaying ? 'Pause highlighting preview' : 'Play highlighting preview'}
+                    className="px-3 py-1.5 rounded-lg bg-navbar-control border border-navbar-control-border text-sm font-semibold text-foreground hover:border-primary hover:text-primary transition-colors cursor-pointer"
+                  >
+                    {demoPlaying ? 'Pause' : 'Play'}
+                  </button>
+                </div>
+                <p className="text-base leading-relaxed text-foreground">
+                  {[
+                    'ReadAloud speaks one sentence at a time.',
+                    'The sentence you hear is highlighted as it plays.',
+                    'Select any sentence to start listening from there.',
+                  ].map((s, i) => (
+                    <span
+                      key={s}
+                      aria-current={demoIndex === i ? 'true' : undefined}
+                      className={demoIndex === i ? 'bg-highlight-bg text-highlight-text rounded px-1 -mx-0.5 font-medium' : undefined}
+                    >
+                      {s}{' '}
+                    </span>
+                  ))}
+                </p>
+                <p className="mt-3 text-base text-muted">This is how playback follows along in the reader.</p>
+              </div>
             </section>
 
             {/* DUAL INPUT SECTION: Upload PDF & Paste Text with Equal Prominence */}
             <section
+              id="get-started"
               aria-label="Upload document or paste text"
               className="w-full"
             >
@@ -253,16 +327,14 @@ export default function Home() {
                 <h2 className="font-heading text-xl sm:text-2xl font-bold text-foreground">
                   Choose How You Want to Read
                 </h2>
-                <p className="text-sm text-muted mt-1">
-                  Upload a document or paste text to start listening.
-                </p>
+                <p className="text-base text-muted mt-1">Upload a document or paste text — both open in the same reader.</p>
               </div>
 
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
                 {/* Feature 1: Upload Document File */}
                 <div
                   className={cn(
-                    'bg-surface border border-border rounded-2xl md:rounded-3xl p-6 sm:p-8 flex flex-col shadow-sm transition-all duration-200 hover:border-primary hover:shadow-md',
+                    'bg-surface border border-border rounded-2xl p-6 sm:p-7 flex flex-col shadow-sm transition-colors duration-200 hover:border-primary hover:shadow-md',
                     dragActive && 'border-primary bg-primary-subtle/30 ring-4 ring-primary/20'
                   )}
                   onDrop={handleDrop}
@@ -286,19 +358,19 @@ export default function Home() {
                       <h3 className="font-heading text-xl font-bold text-foreground leading-tight">
                         Upload a Document
                       </h3>
-                      <span className="text-xs text-muted">Research papers, books, essays, and reports</span>
+                      <span className="text-base text-muted">Research papers, books, essays, and reports</span>
                     </div>
                   </div>
 
-                  <p className="text-sm text-muted mb-6 leading-relaxed">
+                  <p className="text-base text-muted mb-6 leading-relaxed">
                     Choose a PDF, Markdown, TXT, or DOCX file, or drag it here. The document is processed
                     for reading and synchronized sentence playback.
                   </p>
 
                   <div
                     onClick={handleDropAreaClick}
-                    className="mt-auto border-2 border-dashed border-border/80 hover:border-primary bg-background/50 hover:bg-background rounded-xl p-6 flex flex-col items-center justify-center text-center cursor-pointer transition-colors group mb-4"
-                    role="button"
+                    className="mt-auto border-2 border-dashed border-border/80 hover:border-primary focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary/20 bg-background/50 hover:bg-background rounded-xl p-6 flex flex-col items-center justify-center text-center cursor-pointer transition-colors group mb-4"
+                    id="upload-dropzone" aria-label="Choose a document to upload" role="button"
                     tabIndex={0}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' || e.key === ' ') {
@@ -307,11 +379,11 @@ export default function Home() {
                       }
                     }}
                   >
-                    <UploadCloudIcon size={32} className="text-primary mb-2 transition-transform duration-200 group-hover:scale-110" />
-                    <span className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors">
+                    <UploadCloudIcon size={32} className="text-primary mb-2 transition-transform duration-200 " />
+                    <span className="text-base font-semibold text-foreground group-hover:text-primary transition-colors">
                       Choose a document
                     </span>
-                    <span className="text-xs text-muted mt-0.5">PDF, MD, TXT, DOCX, or drop a file here</span>
+                    <span className="text-base text-muted mt-0.5">PDF, DOCX, TXT, Markdown — or drop a file here</span>
                   </div>
 
                   {fileError && (
@@ -321,31 +393,13 @@ export default function Home() {
                     <p role="status" className="text-sm text-muted mb-3">Reading document…</p>
                   )}
 
-                  <div className="flex flex-wrap items-center gap-2 justify-between pt-2 border-t border-border/60">
-                    <div className="flex gap-2">
-                      <button
-                        type="button"
-                        className="px-3 py-2 rounded-lg bg-navbar-control border border-navbar-control-border text-xs font-semibold text-foreground hover:border-primary hover:text-primary transition-colors cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
-                        onClick={handleLoadSamplePdf}
-                        disabled={isLoadingSample}
-                      >
-                        <SparklesIcon size={13} className="text-primary" />
-                        <span>{isLoadingSample ? 'Loading PDF…' : 'Sample PDF'}</span>
-                      </button>
-                    </div>
-
-                    <button
-                      type="button"
-                      className="px-5 py-2.5 rounded-xl bg-primary text-white font-semibold text-sm shadow-md hover:bg-primary-hover hover:scale-102 active:scale-98 transition-all cursor-pointer border-0"
-                      onClick={handleDropAreaClick}
-                    >
-                      Choose File
-                    </button>
-                  </div>
+                  <p className="text-base text-muted leading-relaxed pt-3 border-t border-border/60">
+                    No fixed file-size limit. Files are opened locally in your browser, so very large documents may take longer to load.
+                  </p>
                 </div>
 
                 {/* Feature 2: Paste or Type Plain Text */}
-                <div className="bg-surface border border-border rounded-2xl md:rounded-3xl p-6 sm:p-8 flex flex-col shadow-sm transition-all duration-200 hover:border-primary hover:shadow-md">
+                <div className="bg-surface border border-border rounded-2xl p-6 sm:p-7 flex flex-col shadow-sm transition-colors duration-200 hover:border-primary hover:shadow-md">
                   <div className="flex items-center gap-3 mb-4">
                     <div className="w-12 h-12 rounded-2xl bg-primary-subtle text-primary flex items-center justify-center shrink-0 shadow-xs">
                       <FileTextIcon size={24} />
@@ -354,11 +408,11 @@ export default function Home() {
                       <h3 className="font-heading text-xl font-bold text-foreground leading-tight">
                         Paste or Type Text
                       </h3>
-                      <span className="text-xs text-muted">Articles, notes, speeches, and study material</span>
+                      <span className="text-base text-muted">Articles, notes, speeches, and study material</span>
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-between text-xs text-muted mb-2 px-0.5 font-mono">
+                  <div className="flex items-center justify-between text-sm text-muted mb-2 px-0.5 font-mono">
                     <span className="font-sans font-medium text-foreground">Paste plain text:</span>
                     <div className="flex items-center gap-1.5">
                       <span>{wordCount} words</span>
@@ -375,8 +429,11 @@ export default function Home() {
                     </div>
                   </div>
 
+                  <label htmlFor="paste-text" className="sr-only">Paste or type text to listen to</label>
                   <textarea
-                    className="w-full flex-1 min-h-[170px] p-3.5 rounded-xl border border-border bg-background text-foreground text-sm leading-relaxed resize-y outline-none transition-all focus:border-primary focus:ring-2 focus:ring-primary/20 mb-4"
+                    id="paste-text"
+                    aria-describedby="open-reader-hint"
+                    className="w-full flex-1 min-h-[170px] p-3.5 rounded-xl border border-border bg-background text-foreground text-base leading-relaxed resize-y outline-none transition-all focus:border-primary focus:ring-2 focus:ring-primary/20 mb-4"
                     placeholder="Paste or type text here to open in the reader…"
                     value={textInput}
                     onChange={(e) => {
@@ -392,7 +449,7 @@ export default function Home() {
                     <div className="flex gap-2">
                       <button
                         type="button"
-                        className="px-3 py-2 rounded-lg bg-navbar-control border border-navbar-control-border text-xs font-semibold text-foreground hover:border-primary hover:text-primary transition-colors cursor-pointer flex items-center gap-1.5"
+                        className="px-4 py-2.5 rounded-lg bg-primary-subtle border border-primary/40 text-sm font-semibold text-primary hover:bg-primary hover:text-on-primary transition-colors cursor-pointer flex items-center gap-1.5"
                         onClick={handleLoadSampleText}
                       >
                         <SparklesIcon size={13} className="text-primary" />
@@ -402,7 +459,7 @@ export default function Home() {
                       {textInput && (
                         <button
                           type="button"
-                          className="px-3 py-2 rounded-lg bg-navbar-control border border-navbar-control-border text-xs font-semibold text-muted hover:text-error hover:border-error transition-colors cursor-pointer flex items-center gap-1.5"
+                          className="px-3 py-2 rounded-lg bg-navbar-control border border-navbar-control-border text-sm font-semibold text-muted hover:text-error hover:border-error transition-colors cursor-pointer flex items-center gap-1.5"
                           onClick={handleTextClear}
                         >
                           <TrashIcon size={13} />
@@ -413,7 +470,7 @@ export default function Home() {
 
                     <button
                       type="button"
-                      className="px-5 py-2.5 rounded-xl bg-primary text-white font-semibold text-sm shadow-md hover:bg-primary-hover hover:scale-102 active:scale-98 transition-all cursor-pointer border-0 flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
+                      className="px-5 py-2.5 rounded-xl bg-primary text-on-primary font-semibold text-sm shadow-md hover:bg-primary-hover transition-colors cursor-pointer border-0 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-primary"
                       onClick={handleTextLoad}
                       disabled={!textInput.trim()}
                     >
@@ -421,6 +478,9 @@ export default function Home() {
                       <span>Open in Reader</span>
                     </button>
                   </div>
+                  <p id="open-reader-hint" className="text-base text-muted mt-3">
+                    {textInput.trim() ? 'Ready \u2014 open the text in the reader to start listening.' : 'Paste or type text above, or use Sample Text, to enable Open in Reader.'}
+                  </p>
                 </div>
               </div>
             </section>
@@ -428,54 +488,54 @@ export default function Home() {
             {/* HOW IT WORKS SECTION */}
             <section
               aria-labelledby="how-it-works-heading"
-              className="w-full pt-8 border-t border-border/70"
+              className="w-full pt-6 border-t border-border/70"
             >
-              <div className="text-center max-w-2xl mx-auto mb-10">
+              <div className="text-center max-w-2xl mx-auto mb-8">
                 <h2
                   id="how-it-works-heading"
                   className="font-heading text-2xl sm:text-3xl font-extrabold text-foreground"
                 >
                   Start Listening in 3 Steps
                 </h2>
-                <p className="text-sm sm:text-base text-muted mt-2">
-                  No account required. Your document is processed directly in the browser.
+                <p className="text-base text-muted mt-2">
+                  No account required. Files are parsed in your browser.
                 </p>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="bg-surface border border-border rounded-2xl p-6 sm:p-7 flex flex-col gap-3 shadow-xs">
-                  <div className="w-10 h-10 rounded-xl bg-primary text-white font-heading font-extrabold text-lg flex items-center justify-center shrink-0 shadow-sm">
+                  <div className="w-10 h-10 rounded-xl bg-primary text-on-primary font-heading font-extrabold text-lg flex items-center justify-center shrink-0 shadow-sm">
                     1
                   </div>
                   <h3 className="font-heading font-bold text-lg text-foreground">
                     Upload or Paste
                   </h3>
-                  <p className="text-sm text-muted leading-relaxed">
-                    Upload a document or paste your text into the reader.
+                  <p className="text-base text-muted leading-relaxed">
+                    Upload a file or paste text.
                   </p>
                 </div>
 
                 <div className="bg-surface border border-border rounded-2xl p-6 sm:p-7 flex flex-col gap-3 shadow-xs">
-                  <div className="w-10 h-10 rounded-xl bg-primary text-white font-heading font-extrabold text-lg flex items-center justify-center shrink-0 shadow-sm">
+                  <div className="w-10 h-10 rounded-xl bg-primary text-on-primary font-heading font-extrabold text-lg flex items-center justify-center shrink-0 shadow-sm">
                     2
                   </div>
                   <h3 className="font-heading font-bold text-lg text-foreground">
                     Choose Voice &amp; Speed
                   </h3>
-                  <p className="text-sm text-muted leading-relaxed">
-                    Choose from neural or system voices and adjust the playback speed from 0.75× to 2×.
+                  <p className="text-base text-muted leading-relaxed">
+                    Pick a voice and a speed from 0.75x to 2x.
                   </p>
                 </div>
 
                 <div className="bg-surface border border-border rounded-2xl p-6 sm:p-7 flex flex-col gap-3 shadow-xs">
-                  <div className="w-10 h-10 rounded-xl bg-primary text-white font-heading font-extrabold text-lg flex items-center justify-center shrink-0 shadow-sm">
+                  <div className="w-10 h-10 rounded-xl bg-primary text-on-primary font-heading font-extrabold text-lg flex items-center justify-center shrink-0 shadow-sm">
                     3
                   </div>
                   <h3 className="font-heading font-bold text-lg text-foreground">
                     Listen &amp; Follow Along
                   </h3>
-                  <p className="text-sm text-muted leading-relaxed">
-                    Listen while each sentence is highlighted. Select any sentence to jump to that point, or enable auto-scroll to follow along automatically.
+                  <p className="text-base text-muted leading-relaxed">
+                    Follow the highlighted sentence. Select any sentence to jump to it.
                   </p>
                 </div>
               </div>
@@ -484,89 +544,60 @@ export default function Home() {
             {/* SEPARATED, ROOMY FEATURES SECTION WITH CLEAR TYPOGRAPHY */}
             <section
               aria-labelledby="features-heading"
-              className="w-full pt-8 border-t border-border/70"
+              className="w-full pt-6 border-t border-border/70"
             >
-              <div className="text-center max-w-2xl mx-auto mb-10">
+              <div className="text-center max-w-2xl mx-auto mb-8">
                 <h2
                   id="features-heading"
                   className="font-heading text-2xl sm:text-3xl font-extrabold text-foreground"
                 >
-                  Built for Comfortable Reading and Listening
+                  Why ReadAloud
                 </h2>
-                <p className="text-sm sm:text-base text-muted mt-2">
-                  Useful reading tools for papers, books, notes, and other long-form text.
+                <p className="text-base text-muted mt-2">
+                  Three things set ReadAloud apart when you listen to long documents.
                 </p>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Feature 1 */}
-                <div className="p-6 sm:p-8 rounded-2xl md:rounded-3xl bg-surface border border-border flex flex-col gap-3 shadow-xs transition-transform duration-200 hover:-translate-y-0.5">
-                  <div className="w-12 h-12 rounded-2xl bg-primary-subtle text-primary flex items-center justify-center shadow-xs">
-                    <ShieldIcon size={24} />
-                  </div>
-                  <h3 className="font-heading text-lg sm:text-xl font-bold text-foreground">
-                    Local PDF Processing
-                  </h3>
-                  <p className="text-sm sm:text-base text-muted leading-relaxed">
-                    Documents and pasted text are processed in your browser. Local Kokoro voices also run directly on your device.
-                  </p>
-                </div>
-
-                {/* Feature 2 */}
-                <div className="p-6 sm:p-8 rounded-2xl md:rounded-3xl bg-surface border border-border flex flex-col gap-3 shadow-xs transition-transform duration-200 hover:-translate-y-0.5">
-                  <div className="w-12 h-12 rounded-2xl bg-primary-subtle text-primary flex items-center justify-center shadow-xs">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="p-6 sm:p-7 rounded-2xl bg-surface border border-border flex flex-col gap-3 shadow-sm transition-colors hover:border-primary">
+                  <div className="w-12 h-12 rounded-xl bg-primary-subtle text-primary flex items-center justify-center">
                     <AutoScrollIcon size={24} />
                   </div>
-                  <h3 className="font-heading text-lg sm:text-xl font-bold text-foreground">
-                    Synchronized Sentence Highlighting
-                  </h3>
-                  <p className="text-sm sm:text-base text-muted leading-relaxed">
-                    The current sentence is highlighted as you listen. Select any sentence to start playback from that point, and enable auto-scroll to follow the document automatically.
-                  </p>
+                  <h3 className="font-heading text-lg sm:text-xl font-bold text-foreground">Synchronized Highlighting</h3>
+                  <p className="text-base text-muted leading-relaxed">The spoken sentence stays highlighted. Select any sentence to start playback there, with optional auto-scroll.</p>
                 </div>
-
-                {/* Feature 3 */}
-                <div className="p-6 sm:p-8 rounded-2xl md:rounded-3xl bg-surface border border-border flex flex-col gap-3 shadow-xs transition-transform duration-200 hover:-translate-y-0.5">
-                  <div className="w-12 h-12 rounded-2xl bg-primary-subtle text-primary flex items-center justify-center shadow-xs">
+                <div className="p-6 sm:p-7 rounded-2xl bg-surface border border-border flex flex-col gap-3 shadow-sm transition-colors hover:border-primary">
+                  <div className="w-12 h-12 rounded-xl bg-primary-subtle text-primary flex items-center justify-center">
+                    <ShieldIcon size={24} />
+                  </div>
+                  <h3 className="font-heading text-lg sm:text-xl font-bold text-foreground">Local Processing</h3>
+                  <p className="text-base text-muted leading-relaxed">Document files are parsed in your browser. Optional Kokoro audio uses only the server URL you configure.</p>
+                </div>
+                <div className="p-6 sm:p-7 rounded-2xl bg-surface border border-border flex flex-col gap-3 shadow-sm transition-colors hover:border-primary">
+                  <div className="w-12 h-12 rounded-xl bg-primary-subtle text-primary flex items-center justify-center">
                     <VoiceIcon size={24} />
                   </div>
-                  <h3 className="font-heading text-lg sm:text-xl font-bold text-foreground">
-                    Neural &amp; System Voices
-                  </h3>
-                  <p className="text-sm sm:text-base text-muted leading-relaxed">
-                    Choose from 50+ Kokoro neural voices or voices provided by your browser and operating system. Adjust playback speed from 0.75× to 2×.
-                  </p>
-                </div>
-
-                {/* Feature 4 */}
-                <div className="p-6 sm:p-8 rounded-2xl md:rounded-3xl bg-surface border border-border flex flex-col gap-3 shadow-xs transition-transform duration-200 hover:-translate-y-0.5">
-                  <div className="w-12 h-12 rounded-2xl bg-primary-subtle text-primary flex items-center justify-center shadow-xs">
-                    <SmartphoneIcon size={24} />
-                  </div>
-                  <h3 className="font-heading text-lg sm:text-xl font-bold text-foreground">
-                    Mobile-Friendly Reader
-                  </h3>
-                  <p className="text-sm sm:text-base text-muted leading-relaxed">
-                    Read and listen comfortably on phones and tablets with touch-friendly controls, auto-fit PDF pages, and a bottom playback bar.
-                  </p>
+                  <h3 className="font-heading text-lg sm:text-xl font-bold text-foreground">Voice &amp; Speed Selection</h3>
+                  <p className="text-base text-muted leading-relaxed">Choose browser or system voices and listen at 0.75x to 2x. Optional high-quality voices run on a server you set up. The reader also works on phones and tablets.</p>
                 </div>
               </div>
             </section>
 
             {/* FREQUENTLY ASKED QUESTIONS */}
             <section
+              id="faq"
               aria-labelledby="faq-heading"
-              className="w-full pt-8 border-t border-border/70"
+              className="w-full pt-6 border-t border-border/70"
             >
-              <div className="text-center max-w-2xl mx-auto mb-10">
+              <div className="text-center max-w-2xl mx-auto mb-8">
                 <h2
                   id="faq-heading"
                   className="font-heading text-2xl sm:text-3xl font-extrabold text-foreground"
                 >
                   Frequently Asked Questions
                 </h2>
-                <p className="text-sm sm:text-base text-muted mt-2">
-                  Everything you need to know about using PDF Text to Speech Reader.
+                <p className="text-base text-muted mt-2">
+                  Short answers about formats, voices and listening.
                 </p>
               </div>
 
@@ -583,6 +614,8 @@ export default function Home() {
                         onClick={() => toggleFaq(idx)}
                         className="w-full p-5 sm:p-6 text-left font-heading font-bold text-base sm:text-lg text-foreground flex items-center justify-between gap-4 cursor-pointer border-0 bg-transparent hover:text-primary transition-colors"
                         aria-expanded={isOpen}
+                        aria-controls={`faq-panel-${idx}`}
+                        id={`faq-button-${idx}`}
                       >
                         <span>{faq.q}</span>
                         <span className="text-muted shrink-0">
@@ -591,7 +624,7 @@ export default function Home() {
                       </button>
 
                       {isOpen && (
-                        <div className="px-5 pb-5 sm:px-6 sm:pb-6 text-sm sm:text-base text-muted leading-relaxed border-t border-border/40 pt-3 animate-fade-in-fast">
+                        <div id={`faq-panel-${idx}`} role="region" aria-labelledby={`faq-button-${idx}`} className="px-5 pb-5 sm:px-6 sm:pb-6 text-base text-muted leading-relaxed border-t border-border/40 pt-3 animate-fade-in-fast">
                           {faq.a}
                         </div>
                       )}
@@ -603,11 +636,12 @@ export default function Home() {
 
             {/* Brand Signature Footer */}
             <footer
-              className="w-full text-center text-xs sm:text-sm text-muted py-4 border-t border-border/60"
+              className="w-full text-center text-sm text-muted py-4 border-t border-border/60"
               role="contentinfo"
             >
+              <p className="mb-2">Free PDF &amp; text to speech reader for PDF, DOCX, TXT and Markdown.</p>
               <div className="flex items-center justify-center gap-2 flex-wrap">
-                <span>PDF Text to Speech Reader — Crafted with care by</span>
+                <span>ReadAloud — Listen, Read, Follow Along. Crafted by</span>
                 <a
                   href="https://github.com/imranpollob"
                   target="_blank"
@@ -616,6 +650,12 @@ export default function Home() {
                 >
                   Imran Pollob
                 </a>
+                <span className="text-muted/40">•</span>
+                <a href="https://github.com/imranpollob/pdf-text-to-speech-reader" target="_blank" rel="noopener noreferrer" className="text-primary font-semibold hover:underline">GitHub</a>
+                <span className="text-muted/40">•</span>
+                <a href="https://github.com/imranpollob/pdf-text-to-speech-reader/issues" target="_blank" rel="noopener noreferrer" className="text-primary font-semibold hover:underline">Feedback</a>
+                <span className="text-muted/40">•</span>
+                <a href="#faq" className="text-primary font-semibold hover:underline">Privacy</a>
                 <span className="text-muted/40">•</span>
                 <a
                   href="https://github.com/imranpollob/pdf-text-to-speech-reader"

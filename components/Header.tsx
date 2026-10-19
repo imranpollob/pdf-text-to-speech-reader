@@ -132,12 +132,13 @@ export default function Header() {
               type="button"
               onClick={handleGoHome}
               className="flex items-center gap-2.5 text-foreground cursor-pointer shrink-0 border-0 bg-transparent p-0 group"
-              title="Return to Home / Upload"
+              title="ReadAloud — return to home"
+              aria-label="ReadAloud — return to home"
             >
               <div className="w-8 h-8 rounded-lg overflow-hidden border-[1.5px] border-primary flex items-center justify-center bg-navbar-control shadow-[0_2px_6px_color-mix(in_srgb,var(--color-primary)_20%,transparent)] transition-transform duration-200 group-hover:scale-105">
                 <Image
                   src="./brand-logo.png"
-                  alt="Brand Logo"
+                  alt="ReadAloud logo"
                   width={28}
                   height={28}
                   className="w-full h-full object-cover"
@@ -145,8 +146,8 @@ export default function Header() {
                 />
               </div>
               <span className="font-heading font-bold text-base tracking-tight text-foreground whitespace-nowrap">
-                <span className="hidden sm:inline">PDF Text to Speech Reader</span>
-                <span className="sm:hidden">PDF Reader</span>
+                <span>ReadAloud</span>
+                
               </span>
             </button>
 

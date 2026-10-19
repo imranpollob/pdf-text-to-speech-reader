@@ -1,6 +1,6 @@
-# PDF Text to Speech Reader 📄🔊
+# ReadAloud
 
-A document and text reader with text-to-speech capabilities. Upload PDFs, Markdown, TXT, or DOCX files, or paste text, then listen with synchronized highlighting.
+ReadAloud is a free PDF & text to speech reader. Upload PDF, DOCX, TXT, or Markdown files, or paste text, then listen with synchronized sentence highlighting.
 
 ## ✨ Features
 

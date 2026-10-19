@@ -18,8 +18,9 @@
   --brand-950: #042f2e;
 
   /* Semantic Light Mode */
-  --color-primary: #0d9488;
-  --color-primary-hover: #0f766e;
+  --color-primary: #0f766e;
+  --color-primary-hover: #115e59;
+  --color-on-primary: #ffffff;
   --color-primary-subtle: rgba(13, 148, 136, 0.12);
 
   --color-background: #ecfdfb;
@@ -27,7 +28,7 @@
   --color-surface-hover: #ffffff;
   --color-surface-card: #ffffff;
   --color-text: #0f172a;
-  --color-text-muted: #64748b;
+  --color-text-muted: #475569;
   --color-border: #cbd5e1;
   --color-border-subtle: rgba(203, 213, 225, 0.6);
 
@@ -102,6 +103,7 @@
   /* Semantic Dark Mode */
   --color-primary: #14b8a6;
   --color-primary-hover: #2dd4bf;
+  --color-on-primary: #042f2e;
   --color-primary-subtle: rgba(20, 184, 166, 0.16);
 
   --color-background: #071311;
@@ -109,7 +111,7 @@
   --color-surface-hover: #132a26;
   --color-surface-card: #0d1f1c;
   --color-text: #f0fdfa;
-  --color-text-muted: #94a3b8;
+  --color-text-muted: #a9bfb8;
   --color-border: #1f3a35;
   --color-border-subtle: rgba(31, 58, 53, 0.7);
 
@@ -148,6 +150,7 @@
 @theme inline {
   --color-primary: var(--color-primary);
   --color-primary-hover: var(--color-primary-hover);
+  --color-on-primary: var(--color-on-primary);
   --color-primary-subtle: var(--color-primary-subtle);
   --color-background: var(--color-background);
   --color-surface: var(--color-surface);
@@ -302,6 +305,23 @@
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }
 
