@@ -33,9 +33,9 @@ export const viewport: Viewport = {
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://imranpollob.github.io/pdf-text-to-speech-reader/"),
-  title: "ReadAloud – Free PDF & Text to Speech Reader",
+  title: "ReadAloud: PDF & Text to Speech with Synchronized Highlighting",
   description:
-    "ReadAloud is a free PDF & text to speech reader. Listen to PDF, DOCX, TXT and Markdown files or pasted text with synchronized sentence highlighting, voice selection and adjustable playback speed — processed locally in your browser.",
+    "ReadAloud is a free PDF & text to speech reader for PDF, DOCX, TXT and Markdown files or pasted text, with synchronized sentence highlighting. Files are parsed locally in your browser.",
   keywords: [
     "PDF text to speech",
     "paste text to speech",
@@ -73,9 +73,9 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     url: "https://imranpollob.github.io/pdf-text-to-speech-reader/",
-    title: "ReadAloud – Free PDF & Text to Speech Reader",
+    title: "ReadAloud: PDF & Text to Speech with Synchronized Highlighting",
     description:
-      "Listen to PDF, DOCX, TXT and Markdown files or pasted text with synchronized sentence highlighting, voice selection and adjustable playback speed.",
+      "ReadAloud reads PDF, DOCX, TXT and Markdown files or pasted text aloud with synchronized sentence highlighting. Free, no account, in your browser.",
     siteName: "ReadAloud",
     images: [
       {
@@ -89,9 +89,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "ReadAloud – Free PDF & Text to Speech Reader",
+    title: "ReadAloud: PDF & Text to Speech with Synchronized Highlighting",
     description:
-      "Listen to PDF, DOCX, TXT and Markdown files or pasted text with synchronized sentence highlighting, voice selection and adjustable playback speed.",
+      "ReadAloud reads PDF, DOCX, TXT and Markdown files or pasted text aloud with synchronized sentence highlighting. Free, no account, in your browser.",
     images: ["./og-image.png"],
     creator: "@imranpollob",
   },
@@ -148,7 +148,7 @@ const jsonLd = {
           name: "Is ReadAloud free?",
           acceptedAnswer: {
             "@type": "Answer",
-            text: "ReadAloud is free and open-source, with no account required. Document files are parsed in your browser.",
+            text: "Yes. ReadAloud is free and open-source, with no account required.",
           },
         },
         {
@@ -156,7 +156,7 @@ const jsonLd = {
           name: "Are my documents uploaded?",
           acceptedAnswer: {
             "@type": "Answer",
-            text: "Document files are parsed in your browser and are not uploaded by ReadAloud. If you enable the optional Kokoro voices, sentences are sent to the Kokoro server URL you configure to generate audio.",
+            text: "No. Files are parsed locally in your browser. The optional Kokoro voices only contact the voice-server address you enter in the app.",
           },
         },
         {
@@ -164,23 +164,7 @@ const jsonLd = {
           name: "Which formats are supported?",
           acceptedAnswer: {
             "@type": "Answer",
-            text: "PDF, DOCX, TXT and Markdown files with selectable text are supported. Scanned image-only PDFs need OCR first, because they have no text layer to read.",
-          },
-        },
-        {
-          "@type": "Question",
-          name: "Can I paste text instead of uploading?",
-          acceptedAnswer: {
-            "@type": "Answer",
-            text: "Yes. Paste or type text to listen with the same synchronized highlighting and playback controls.",
-          },
-        },
-        {
-          "@type": "Question",
-          name: "How does synchronized highlighting work?",
-          acceptedAnswer: {
-            "@type": "Answer",
-            text: "The sentence being spoken is highlighted as you listen. Select any sentence to start playback from there.",
+            text: "PDF, DOCX, TXT and Markdown files with readable text, plus pasted text. Scanned image-only PDFs need OCR first.",
           },
         },
         {
@@ -188,15 +172,7 @@ const jsonLd = {
           name: "Which voices can I use?",
           acceptedAnswer: {
             "@type": "Answer",
-            text: "Use voices from your browser and operating system, or connect an optional Kokoro server you run for additional neural voices.",
-          },
-        },
-        {
-          "@type": "Question",
-          name: "Does ReadAloud work on phones and tablets?",
-          acceptedAnswer: {
-            "@type": "Answer",
-            text: "Yes. Controls are touch-friendly, PDF pages fit your screen, and playback stays in a bottom bar.",
+            text: "Voices from your browser and system, plus optional high-quality Kokoro voices. Speeds run from 0.75x to 2x, on phones and tablets too.",
           },
         },
       ],

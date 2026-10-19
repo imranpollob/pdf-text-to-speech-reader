@@ -106,7 +106,7 @@
   --color-on-primary: #042f2e;
   --color-primary-subtle: rgba(20, 184, 166, 0.16);
 
-  --color-background: #071311;
+  --color-background: #060f0e;
   --color-surface: #0d1f1c;
   --color-surface-hover: #132a26;
   --color-surface-card: #0d1f1c;
@@ -273,29 +273,6 @@
   }
 }
 
-/* ────────────────────────────────────────────────────────
-   Theme switch thumb — must react to the [data-theme] attribute
-   (not React state) so it never flashes the wrong icon: the
-   attribute is set synchronously by the blocking script in
-   layout.tsx before first paint, while React state updates a
-   tick later after hydration.
-   ──────────────────────────────────────────────────────── */
-.theme-switch .thumb .moon-icon {
-  display: none;
-}
-
-[data-theme="dark"] .theme-switch .thumb {
-  left: 1.75rem;
-}
-
-[data-theme="dark"] .theme-switch .thumb .sun-icon {
-  display: none;
-}
-
-[data-theme="dark"] .theme-switch .thumb .moon-icon {
-  display: block;
-}
-
 @keyframes fade-in {
   from {
     opacity: 0;
@@ -372,20 +349,16 @@ nr-sentence.playing,
   color: transparent !important;
 }
 
-/* ------------------------------------------------------------
-   Brand tools launcher toggle - restyled to match this header's
-   circular icon buttons (keyboard shortcuts). Scoped to
-   .header-actions so it overrides launcher.css by specificity.
-   ------------------------------------------------------------ */
+/* Match the brand tools launcher to the header's square icon buttons. */
 .header-actions .bl-toggle {
-  width: 2.25rem;
-  height: 2.25rem;
+  width: 2.25rem !important;
+  height: 2.25rem !important;
   padding: 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   border: 1px solid var(--navbar-control-border);
-  border-radius: var(--radius-pill);
+  border-radius: 10px !important;
   background: var(--navbar-control-bg);
   color: var(--color-text);
   cursor: pointer;
@@ -500,6 +473,216 @@ nr-sentence.playing,
 .formatted-document th { background: var(--navbar-control-bg); }
 .formatted-document img { height: auto; max-width: 100%; }
 .formatted-document hr { border: 0; border-top: 1px solid var(--color-border); margin: 1.5em 0; }
+
+/* Homepage visual polish */
+.hero-section {
+  isolation: isolate;
+}
+
+.hero-section::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  top: -5rem;
+  left: 50%;
+  width: min(58rem, 130vw);
+  height: 50rem;
+  transform: translateX(-50%);
+  pointer-events: none;
+  background: radial-gradient(ellipse at 50% 32%, rgba(20, 184, 166, 0.16) 0%, rgba(20, 184, 166, 0.075) 34%, transparent 72%);
+}
+
+[data-theme="light"] .hero-section::before,
+:root:not([data-theme="dark"]) .hero-section::before {
+  background: radial-gradient(ellipse at 50% 32%, rgba(45, 212, 191, 0.17) 0%, rgba(153, 246, 228, 0.14) 38%, transparent 74%);
+}
+
+.headline-accent {
+  color: var(--color-primary);
+  background: linear-gradient(105deg, var(--color-primary), color-mix(in srgb, var(--color-primary) 68%, white));
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.homepage-input-card {
+  background: color-mix(in srgb, var(--color-surface) 86%, white);
+  border-color: color-mix(in srgb, var(--color-primary) 24%, var(--color-border));
+  box-shadow: 0 18px 50px -24px rgba(8, 47, 43, 0.28), 0 0 0 1px color-mix(in srgb, var(--color-primary) 7%, transparent), 0 14px 40px -30px color-mix(in srgb, var(--color-primary) 40%, transparent);
+}
+
+[data-theme="dark"] .homepage-input-card {
+  background: color-mix(in srgb, var(--color-surface) 88%, white 12%);
+  box-shadow: 0 22px 60px -28px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(20, 184, 166, 0.1), 0 16px 48px -34px rgba(20, 184, 166, 0.55);
+}
+
+.homepage-dropzone {
+  transition: border-color 180ms ease, background-color 180ms ease, transform 180ms ease, box-shadow 180ms ease;
+}
+
+.homepage-dropzone:hover,
+.homepage-dropzone:focus-visible,
+.homepage-dropzone.drag-active {
+  transform: translateY(-2px);
+  border-color: var(--color-primary);
+  background: color-mix(in srgb, var(--color-primary-subtle) 72%, var(--color-background));
+  box-shadow: 0 10px 26px -20px color-mix(in srgb, var(--color-primary) 70%, transparent);
+}
+
+.upload-icon-wrap {
+  display: grid;
+  width: 4.25rem;
+  height: 4.25rem;
+  place-items: center;
+  border-radius: 9999px;
+  background: color-mix(in srgb, var(--color-primary-subtle) 82%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-primary) 12%, transparent);
+}
+
+.reader-preview {
+  background: linear-gradient(145deg, color-mix(in srgb, var(--color-surface-hover) 94%, white), var(--color-surface));
+  border-color: color-mix(in srgb, var(--color-border) 80%, var(--color-primary));
+  box-shadow: 0 18px 42px -32px rgba(15, 23, 42, 0.34), inset 0 1px rgba(255, 255, 255, 0.68);
+}
+
+[data-theme="dark"] .reader-preview {
+  background: linear-gradient(145deg, color-mix(in srgb, var(--color-surface-hover) 72%, #fff 5%), var(--color-surface));
+  box-shadow: inset 0 1px rgba(255, 255, 255, 0.045), 0 18px 42px -32px rgba(0, 0, 0, 0.7);
+}
+
+.reader-copy {
+  text-wrap: pretty;
+}
+
+.reader-sentence {
+  border-radius: 0.45rem;
+  transition: background-color 320ms ease, color 320ms ease, box-shadow 320ms ease;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+}
+
+.reader-sentence.is-highlighted {
+  padding: 0.12em 0.28em;
+  margin-inline: -0.28em;
+  color: var(--highlight-text);
+  background: var(--highlight-bg);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--highlight-border) 28%, transparent);
+}
+
+.preview-progress {
+  height: 3px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-border) 68%, transparent);
+}
+
+.preview-progress > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: color-mix(in srgb, var(--color-primary) 60%, var(--color-border));
+  transition: width 500ms ease;
+}
+
+.sound-wave {
+  height: 1rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  opacity: 0.52;
+}
+
+.sound-wave i {
+  display: block;
+  width: 2px;
+  height: 35%;
+  border-radius: 2px;
+  background: var(--color-primary);
+}
+
+.sound-wave i:nth-child(2), .sound-wave i:nth-child(6) { height: 58%; }
+.sound-wave i:nth-child(3), .sound-wave i:nth-child(5) { height: 82%; }
+.sound-wave i:nth-child(4) { height: 100%; }
+
+.helper-copy {
+  color: color-mix(in srgb, var(--color-text) 74%, var(--color-text-muted));
+}
+
+.faq-item {
+  border: 1px solid var(--color-border);
+  background: color-mix(in srgb, var(--color-surface) 84%, transparent);
+  transition: border-color 180ms ease, background-color 180ms ease;
+}
+
+.faq-item:hover,
+.faq-item.is-open {
+  border-color: color-mix(in srgb, var(--color-primary) 48%, var(--color-border));
+  background: color-mix(in srgb, var(--color-primary-subtle) 20%, var(--color-surface));
+}
+
+.faq-trigger:hover,
+.faq-item.is-open .faq-trigger {
+  color: var(--color-primary);
+}
+
+.faq-chevron {
+  display: inline-flex;
+  transition: transform 220ms ease, color 180ms ease;
+}
+
+.faq-chevron.is-open {
+  color: var(--color-primary);
+  transform: rotate(180deg);
+}
+
+.faq-answer {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  transition: grid-template-rows 260ms ease, opacity 200ms ease;
+}
+
+.faq-answer > div {
+  min-height: 0;
+  overflow: hidden;
+  padding-top: 0;
+  padding-bottom: 0;
+  border-top-width: 0;
+  transition: padding 260ms ease, border-width 260ms ease;
+}
+
+.faq-answer.is-open {
+  grid-template-rows: 1fr;
+  opacity: 1;
+}
+
+.faq-answer.is-open > div {
+  padding-top: 0.75rem;
+  padding-bottom: 1.25rem;
+  border-top-width: 1px;
+}
+
+@media (max-width: 640px) {
+  .hero-section::before {
+    top: -3rem;
+    height: 44rem;
+  }
+
+  .reader-preview {
+    border-radius: 1.35rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .homepage-dropzone,
+  .reader-sentence,
+  .preview-progress > span,
+  .faq-item,
+  .faq-chevron,
+  .faq-answer {
+    transition: none;
+  }
+}
 
 .formatted-document .document-segment {
   border-radius: 3px;

@@ -14,16 +14,11 @@ import { cn } from '../lib/cn';
 import {
   UploadCloudIcon,
   FileTextIcon,
-  SparklesIcon,
   EditIcon,
-  TrashIcon,
   ChevronDownIcon,
-  ChevronUpIcon,
   BookOpenIcon,
-  GitHubIcon,
-  ShieldIcon,
-  AutoScrollIcon,
-  VoiceIcon,
+  PlayIcon,
+  PauseIcon,
 } from '../components/Icons';
 
 const PdfViewer = dynamic(
@@ -42,26 +37,30 @@ export default function Home() {
   const TEXT_CACHE_KEY = 'pdf-text-to-speech-reader-text-input';
   const [textInput, setTextInput] = useState('');
   const [textLoaded, setTextLoaded] = useState(false);
-  const [isLoadingSample, setIsLoadingSample] = useState(false);
   const [isImportingDocument, setIsImportingDocument] = useState(false);
   const [fileError, setFileError] = useState<string | null>(null);
   const [formattedHtml, setFormattedHtml] = useState<string | null>(null);
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
   const [demoIndex, setDemoIndex] = useState(0);
   const [demoPlaying, setDemoPlaying] = useState(true);
+  const [inputTab, setInputTab] = useState<'upload' | 'paste'>('upload');
 
-  // Cycle the highlighting preview (paused for reduced-motion users)
+  // Cycle the highlighting preview; stays still for reduced-motion users
   useEffect(() => {
+    if (typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      setDemoPlaying(false);
+      return;
+    }
     if (!demoPlaying) return;
-    if (typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     const id = window.setInterval(() => setDemoIndex((i) => (i + 1) % 3), 2200);
     return () => window.clearInterval(id);
   }, [demoPlaying]);
 
-  // Restore cached text
+  // Pasted text is never stored; clear anything saved by earlier versions.
   useEffect(() => {
-    const cached = localStorage.getItem(TEXT_CACHE_KEY);
-    if (cached) setTextInput(cached.replaceAll('PDF Text to Speech Reader', 'ReadAloud'));
+    try {
+      localStorage.removeItem(TEXT_CACHE_KEY);
+    } catch { }
   }, []);
 
   const openDocumentFile = async (selected: File) => {
@@ -100,34 +99,6 @@ export default function Home() {
     if (selected) void openDocumentFile(selected);
   };
 
-  const handleLoadSamplePdf = async () => {
-    try {
-      setIsLoadingSample(true);
-      const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '';
-      const response = await fetch(`${basePath}/hello.pdf`);
-      if (!response.ok) throw new Error('Sample PDF not found');
-      const blob = await response.blob();
-      const sampleFile = new File([blob], 'ReadAloud-Sample.pdf', {
-        type: 'application/pdf',
-      });
-      setFile(sampleFile);
-      setFormattedHtml(null);
-      setTextLoaded(false);
-    } catch (e) {
-      console.error('Error loading sample PDF:', e);
-    } finally {
-      setIsLoadingSample(false);
-    }
-  };
-
-  const handleLoadSampleText = () => {
-    const sample = `Welcome to ReadAloud. This is sample text, so you can try listening right away. Open it in the reader, press play, and follow along as each sentence is highlighted. You can also select any sentence to start listening from that point.`;
-    setTextInput(sample);
-    try {
-      localStorage.setItem(TEXT_CACHE_KEY, sample);
-    } catch { }
-  };
-
   const handleTextLoad = () => {
     if (!textInput.trim()) return;
     setFormattedHtml(null);
@@ -142,13 +113,6 @@ export default function Home() {
     setFormattedHtml(null);
     setTextLoaded(false);
     loadSegments([]);
-  };
-
-  const handleTextClear = () => {
-    setTextInput('');
-    try {
-      localStorage.removeItem(TEXT_CACHE_KEY);
-    } catch { }
   };
 
   // Reset to empty state when file and segments are cleared
@@ -187,7 +151,6 @@ export default function Home() {
 
   // Text statistics
   const wordCount = textInput.trim() ? textInput.trim().split(/\s+/).length : 0;
-  const charCount = textInput.length;
   const estimatedReadMinutes = Math.max(
     1,
     Math.ceil(wordCount / (150 * playbackSpeed))
@@ -200,31 +163,19 @@ export default function Home() {
   const faqs = [
     {
       q: 'Is ReadAloud free?',
-      a: 'Yes. ReadAloud is free and open-source, with no account required. Document files are parsed in your browser.',
+      a: 'Yes. ReadAloud is free and open-source, with no account required.',
     },
     {
       q: 'Are my documents uploaded?',
-      a: 'Document files are parsed in your browser and are not uploaded by ReadAloud. If you enable the optional Kokoro voices, sentences are sent to the Kokoro server URL you configure to generate audio.',
+      a: 'No. Files are parsed locally in your browser. The optional Kokoro voices only contact the voice-server address you enter in the app.',
     },
     {
       q: 'Which formats are supported?',
-      a: 'PDF, DOCX, TXT and Markdown files with selectable text, plus text you paste. Scanned image-only PDFs need OCR first, because they have no text layer to read.',
-    },
-    {
-      q: 'Can I paste text instead of uploading?',
-      a: 'Yes. Paste or type text to listen with the same synchronized highlighting and playback controls.',
-    },
-    {
-      q: 'How does synchronized highlighting work?',
-      a: 'The sentence being spoken is highlighted as you listen. Select any sentence to start playback from there.',
+      a: 'PDF, DOCX, TXT and Markdown files with readable text, plus pasted text. Scanned image-only PDFs need OCR first.',
     },
     {
       q: 'Which voices can I use?',
-      a: 'Use voices from your browser and operating system, or connect an optional Kokoro server you run for additional neural voices. Playback speed runs from 0.75x to 2x.',
-    },
-    {
-      q: 'Does ReadAloud work on phones and tablets?',
-      a: 'Yes. Controls are touch-friendly, PDF pages fit your screen, and playback stays in a bottom bar.',
+      a: 'Voices from your browser and system, plus optional high-quality Kokoro voices. Speeds run from 0.75x to 2x, on phones and tablets too.',
     },
   ];
 
@@ -237,411 +188,238 @@ export default function Home() {
         )}
       >
         {showEmptyState ? (
-          <div className="w-full flex flex-col gap-8 sm:gap-10 animate-fade-in-slow">
-            {/* Hero Section */}
-            <section
-              className="text-center flex flex-col items-center pt-2 max-w-3xl mx-auto w-full"
-              aria-label="ReadAloud overview"
-            >
-              <p className="text-sm sm:text-base font-semibold text-primary">Listen, Read, Follow Along.</p>
-
-              <h1 className="mt-2 font-heading text-3xl sm:text-4xl md:text-5xl leading-[1.15] font-extrabold text-foreground tracking-tight">
-                Listen to any document, sentence by sentence.
+          <div className="w-full max-w-[760px] mx-auto flex flex-col items-center animate-fade-in-slow pb-6">
+            {/* Hero with the tool */}
+            <section aria-label="ReadAloud" className="hero-section w-full text-center flex flex-col items-center pt-10 sm:pt-14">
+              <p className="text-base font-semibold text-primary">Listen, Read, Follow Along.</p>
+              <h1 className="mt-3 font-heading text-3xl sm:text-4xl md:text-[2.75rem] leading-[1.1] font-extrabold text-foreground tracking-tight">
+                Listen to any document, <span className="headline-accent">sentence by sentence.</span>
               </h1>
-
-              <p className="mt-4 text-base sm:text-lg text-muted max-w-2xl mx-auto leading-relaxed">
-                Spend less time staring at long documents. Upload a file or paste text, choose a voice and speed, and listen hands-free.
+              <p className="mt-4 text-lg sm:text-xl text-muted max-w-xl mx-auto leading-relaxed">
+                Upload a file or paste text, then listen hands-free.
               </p>
 
-              <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
-                <button
-                  type="button"
-                  onClick={handleLoadSamplePdf}
-                  disabled={isLoadingSample}
-                  className="px-6 py-3 rounded-xl bg-primary text-on-primary font-semibold text-base shadow-md hover:bg-primary-hover transition-colors cursor-pointer border-0 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {isLoadingSample ? 'Loading sample\u2026' : 'Try Sample Document'}
-                </button>
-                <a
-                  href="#upload-dropzone"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    const el = document.getElementById('upload-dropzone');
-                    if (!el) return;
-                    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-                    el.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'center' });
-                    el.focus({ preventScroll: true });
-                  }}
-                  className="px-6 py-3 rounded-xl bg-surface border border-border text-foreground font-semibold text-base hover:border-primary hover:text-primary transition-colors"
-                >
-                  Upload or Paste Text
-                </a>
+              {/* Single input card with tabs */}
+              <div className="homepage-input-card mt-8 w-full text-left border rounded-[1.75rem] p-5 sm:p-7">
+                <div role="tablist" aria-label="Choose how to add text" className="flex gap-1 mb-5 border-b border-border">
+                  <button
+                    type="button"
+                    role="tab"
+                    id="tab-upload"
+                    aria-selected={inputTab === 'upload'}
+                    aria-controls="panel-upload"
+                    onClick={() => setInputTab('upload')}
+                    className={cn(
+                      'flex items-center gap-2 px-4 py-3 min-h-[44px] font-semibold text-base border-0 border-b-2 bg-transparent cursor-pointer transition-colors -mb-px',
+                      inputTab === 'upload'
+                        ? 'text-primary border-primary'
+                        : 'text-muted border-transparent hover:text-foreground'
+                    )}
+                  >
+                    <UploadCloudIcon size={18} />
+                    <span>Upload</span>
+                  </button>
+                  <button
+                    type="button"
+                    role="tab"
+                    id="tab-paste"
+                    aria-selected={inputTab === 'paste'}
+                    aria-controls="panel-paste"
+                    onClick={() => setInputTab('paste')}
+                    className={cn(
+                      'flex items-center gap-2 px-4 py-3 min-h-[44px] font-semibold text-base border-0 border-b-2 bg-transparent cursor-pointer transition-colors -mb-px',
+                      inputTab === 'paste'
+                        ? 'text-primary border-primary'
+                        : 'text-muted border-transparent hover:text-foreground'
+                    )}
+                  >
+                    <FileTextIcon size={18} />
+                    <span>Paste text</span>
+                  </button>
+                </div>
+
+                {inputTab === 'upload' ? (
+                  <div role="tabpanel" id="panel-upload" aria-labelledby="tab-upload">
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept=".pdf,.md,.markdown,.txt,.docx,application/pdf,text/markdown,text/plain,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                      onChange={handleFileChange}
+                      className="hidden"
+                      aria-hidden="true"
+                      tabIndex={-1}
+                    />
+                    <div
+                      onClick={handleDropAreaClick}
+                      className={cn(
+                        'homepage-dropzone border-2 border-dashed border-border/80 hover:border-primary focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary/20 bg-background/50 hover:bg-background rounded-2xl p-8 sm:p-10 flex flex-col items-center justify-center text-center cursor-pointer transition-all',
+                        dragActive && 'drag-active border-primary bg-primary-subtle/30 ring-4 ring-primary/20'
+                      )}
+                      id="upload-dropzone"
+                      aria-label="Drop a file or choose a document to upload"
+                      role="button"
+                      tabIndex={0}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          handleDropAreaClick();
+                        }
+                      }}
+                      onDrop={handleDrop}
+                      onDragOver={handleDragOver}
+                      onDragEnter={handleDragOver}
+                      onDragLeave={handleDragLeave}
+                    >
+                      <span className="upload-icon-wrap mb-4">
+                        <UploadCloudIcon size={30} className="text-primary" />
+                      </span>
+                      <span className="text-base sm:text-lg font-bold text-foreground">
+                        Drop a file here or click to browse
+                      </span>
+                      <span className="mt-2 text-sm text-muted">PDF · DOCX · TXT · Markdown</span>
+                    </div>
+                    <p className="mt-3 text-sm text-muted">
+                      No fixed file-size limit. Very large files may take longer to open.
+                    </p>
+                    {fileError && (
+                      <p role="alert" className="text-base text-error mt-3">{fileError}</p>
+                    )}
+                    {isImportingDocument && (
+                      <p role="status" className="text-base text-muted mt-3">Reading document…</p>
+                    )}
+                  </div>
+                ) : (
+                  <div role="tabpanel" id="panel-paste" aria-labelledby="tab-paste">
+                    <label htmlFor="paste-text" className="sr-only">Paste or type text to listen to</label>
+                    <textarea
+                      id="paste-text"
+                      className="w-full min-h-[170px] p-4 rounded-xl border border-border bg-background text-foreground text-base leading-relaxed resize-y outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/20"
+                      placeholder="Paste or type the text you want to hear…"
+                      value={textInput}
+                      onChange={(e) => setTextInput(e.target.value)}
+                      rows={6}
+                    />
+                    {textInput.trim() ? (
+                      <p className="mt-3 text-sm text-muted">
+                        {wordCount} {wordCount === 1 ? 'word' : 'words'} · about {estimatedReadMinutes} min listen
+                      </p>
+                    ) : null}
+                    <div className="mt-4 flex flex-wrap items-center gap-3">
+                      <button
+                        type="button"
+                        className="px-6 py-3 min-h-[44px] rounded-xl bg-primary text-on-primary font-semibold text-base shadow-md hover:bg-primary-hover transition-colors cursor-pointer border-0 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
+                        onClick={handleTextLoad}
+                        disabled={!textInput.trim()}
+                        aria-describedby="open-reader-hint"
+                      >
+                        <BookOpenIcon size={16} />
+                        <span>Open in Reader</span>
+                      </button>
+                    </div>
+                    <p id="open-reader-hint" className="sr-only">
+                      {textInput.trim() ? 'Open the text in the reader to start listening.' : 'Paste or type text above to enable Open in Reader.'}
+                    </p>
+                  </div>
+                )}
               </div>
-              <p className="mt-3 text-base text-muted">No account needed. Documents are parsed locally in your browser.</p>
+              <p className="mt-4 text-sm text-muted">Runs in your browser. No account needed.</p>
+            </section>
 
-              <ul className="mt-5 flex flex-wrap justify-center gap-2 list-none p-0" aria-label="Supported formats">
-                {['PDF', 'DOCX', 'TXT', 'Markdown', 'Pasted text'].map((f) => (
-                  <li key={f} className="px-3 py-1 rounded-full bg-primary-subtle text-primary text-sm font-semibold">{f}</li>
-                ))}
-              </ul>
-
-              {/* Compact synchronized-highlighting preview */}
-              <div className="mt-7 w-full max-w-2xl text-left bg-surface border border-border rounded-2xl p-5 sm:p-6 shadow-sm">
-                <div className="flex items-center justify-between gap-3 mb-3">
-                  <span className="font-heading font-bold text-base text-foreground">Preview: synchronized highlighting</span>
+            {/* Highlight preview */}
+            <section aria-label="Synchronized highlighting preview" className="w-full mt-14 sm:mt-20">
+              <div className="reader-preview relative overflow-hidden rounded-[1.75rem] border p-6 sm:p-9">
+                <div className="flex items-center justify-between gap-3 mb-4">
+                  <span className="text-sm font-semibold text-muted uppercase tracking-wider flex items-center gap-3">
+                    Preview
+                    <span className="sound-wave" aria-hidden="true"><i /><i /><i /><i /><i /><i /><i /></span>
+                  </span>
                   <button
                     type="button"
                     onClick={() => setDemoPlaying((v) => !v)}
                     aria-label={demoPlaying ? 'Pause highlighting preview' : 'Play highlighting preview'}
-                    className="px-3 py-1.5 rounded-lg bg-navbar-control border border-navbar-control-border text-sm font-semibold text-foreground hover:border-primary hover:text-primary transition-colors cursor-pointer"
+                    className="preview-control h-10 w-10 shrink-0 rounded-full bg-navbar-control border border-navbar-control-border text-foreground hover:border-primary hover:text-primary transition-colors cursor-pointer inline-flex items-center justify-center"
                   >
-                    {demoPlaying ? 'Pause' : 'Play'}
+                    {demoPlaying ? <PauseIcon size={17} /> : <PlayIcon size={17} />}
                   </button>
                 </div>
-                <p className="text-base leading-relaxed text-foreground">
+                <p className="reader-copy text-lg sm:text-xl leading-[1.85] text-foreground">
                   {[
-                    'ReadAloud speaks one sentence at a time.',
-                    'The sentence you hear is highlighted as it plays.',
-                    'Select any sentence to start listening from there.',
+                    'The harbor town woke slowly as gulls circled the lighthouse.',
+                    'ReadAloud reads each sentence aloud while the words light up in time.',
+                    'Select any sentence to jump straight to it, at your own pace.',
                   ].map((s, i) => (
                     <span
                       key={s}
                       aria-current={demoIndex === i ? 'true' : undefined}
-                      className={demoIndex === i ? 'bg-highlight-bg text-highlight-text rounded px-1 -mx-0.5 font-medium' : undefined}
+                      className={cn('reader-sentence', demoIndex === i && 'is-highlighted')}
                     >
                       {s}{' '}
                     </span>
                   ))}
                 </p>
-                <p className="mt-3 text-base text-muted">This is how playback follows along in the reader.</p>
+                <div className="preview-progress mt-6" role="presentation" aria-hidden="true">
+                  <span style={{ width: `${((demoIndex + 1) / 3) * 100}%` }} />
+                </div>
               </div>
+              <p className="helper-copy mt-4 text-center text-sm">
+                Sentence highlighting · Private, in-browser · Adjustable voice and speed
+              </p>
             </section>
 
-            {/* DUAL INPUT SECTION: Upload PDF & Paste Text with Equal Prominence */}
-            <section
-              id="get-started"
-              aria-label="Upload document or paste text"
-              className="w-full"
-            >
-              <div className="text-center mb-6">
-                <h2 className="font-heading text-xl sm:text-2xl font-bold text-foreground">
-                  Choose How You Want to Read
-                </h2>
-                <p className="text-base text-muted mt-1">Upload a document or paste text — both open in the same reader.</p>
-              </div>
-
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
-                {/* Feature 1: Upload Document File */}
-                <div
-                  className={cn(
-                    'bg-surface border border-border rounded-2xl p-6 sm:p-7 flex flex-col shadow-sm transition-colors duration-200 hover:border-primary hover:shadow-md',
-                    dragActive && 'border-primary bg-primary-subtle/30 ring-4 ring-primary/20'
-                  )}
-                  onDrop={handleDrop}
-                  onDragOver={handleDragOver}
-                  onDragEnter={handleDragOver}
-                  onDragLeave={handleDragLeave}
-                >
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept=".pdf,.md,.markdown,.txt,.docx,application/pdf,text/markdown,text/plain,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-                    onChange={handleFileChange}
-                    className="hidden"
-                  />
-
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="w-12 h-12 rounded-2xl bg-primary-subtle text-primary flex items-center justify-center shrink-0 shadow-xs">
-                      <UploadCloudIcon size={24} />
-                    </div>
-                    <div>
-                      <h3 className="font-heading text-xl font-bold text-foreground leading-tight">
-                        Upload a Document
-                      </h3>
-                      <span className="text-base text-muted">Research papers, books, essays, and reports</span>
-                    </div>
-                  </div>
-
-                  <p className="text-base text-muted mb-6 leading-relaxed">
-                    Choose a PDF, Markdown, TXT, or DOCX file, or drag it here. The document is processed
-                    for reading and synchronized sentence playback.
-                  </p>
-
-                  <div
-                    onClick={handleDropAreaClick}
-                    className="mt-auto border-2 border-dashed border-border/80 hover:border-primary focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary/20 bg-background/50 hover:bg-background rounded-xl p-6 flex flex-col items-center justify-center text-center cursor-pointer transition-colors group mb-4"
-                    id="upload-dropzone" aria-label="Choose a document to upload" role="button"
-                    tabIndex={0}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault();
-                        handleDropAreaClick();
-                      }
-                    }}
-                  >
-                    <UploadCloudIcon size={32} className="text-primary mb-2 transition-transform duration-200 " />
-                    <span className="text-base font-semibold text-foreground group-hover:text-primary transition-colors">
-                      Choose a document
-                    </span>
-                    <span className="text-base text-muted mt-0.5">PDF, DOCX, TXT, Markdown — or drop a file here</span>
-                  </div>
-
-                  {fileError && (
-                    <p role="alert" className="text-sm text-error mb-3">{fileError}</p>
-                  )}
-                  {isImportingDocument && (
-                    <p role="status" className="text-sm text-muted mb-3">Reading document…</p>
-                  )}
-
-                  <p className="text-base text-muted leading-relaxed pt-3 border-t border-border/60">
-                    No fixed file-size limit. Files are opened locally in your browser, so very large documents may take longer to load.
-                  </p>
-                </div>
-
-                {/* Feature 2: Paste or Type Plain Text */}
-                <div className="bg-surface border border-border rounded-2xl p-6 sm:p-7 flex flex-col shadow-sm transition-colors duration-200 hover:border-primary hover:shadow-md">
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="w-12 h-12 rounded-2xl bg-primary-subtle text-primary flex items-center justify-center shrink-0 shadow-xs">
-                      <FileTextIcon size={24} />
-                    </div>
-                    <div>
-                      <h3 className="font-heading text-xl font-bold text-foreground leading-tight">
-                        Paste or Type Text
-                      </h3>
-                      <span className="text-base text-muted">Articles, notes, speeches, and study material</span>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between text-sm text-muted mb-2 px-0.5 font-mono">
-                    <span className="font-sans font-medium text-foreground">Paste plain text:</span>
-                    <div className="flex items-center gap-1.5">
-                      <span>{wordCount} words</span>
-                      <span>•</span>
-                      <span>{charCount} chars</span>
-                      {wordCount > 0 && (
-                        <>
-                          <span>•</span>
-                          <span className="text-primary font-semibold font-sans">
-                            ~{estimatedReadMinutes} min listen
-                          </span>
-                        </>
-                      )}
-                    </div>
-                  </div>
-
-                  <label htmlFor="paste-text" className="sr-only">Paste or type text to listen to</label>
-                  <textarea
-                    id="paste-text"
-                    aria-describedby="open-reader-hint"
-                    className="w-full flex-1 min-h-[170px] p-3.5 rounded-xl border border-border bg-background text-foreground text-base leading-relaxed resize-y outline-none transition-all focus:border-primary focus:ring-2 focus:ring-primary/20 mb-4"
-                    placeholder="Paste or type text here to open in the reader…"
-                    value={textInput}
-                    onChange={(e) => {
-                      setTextInput(e.target.value);
-                      try {
-                        localStorage.setItem(TEXT_CACHE_KEY, e.target.value);
-                      } catch { }
-                    }}
-                    rows={6}
-                  />
-
-                  <div className="flex flex-wrap items-center gap-2 justify-between pt-2 border-t border-border/60">
-                    <div className="flex gap-2">
-                      <button
-                        type="button"
-                        className="px-4 py-2.5 rounded-lg bg-primary-subtle border border-primary/40 text-sm font-semibold text-primary hover:bg-primary hover:text-on-primary transition-colors cursor-pointer flex items-center gap-1.5"
-                        onClick={handleLoadSampleText}
-                      >
-                        <SparklesIcon size={13} className="text-primary" />
-                        <span>Sample Text</span>
-                      </button>
-
-                      {textInput && (
-                        <button
-                          type="button"
-                          className="px-3 py-2 rounded-lg bg-navbar-control border border-navbar-control-border text-sm font-semibold text-muted hover:text-error hover:border-error transition-colors cursor-pointer flex items-center gap-1.5"
-                          onClick={handleTextClear}
-                        >
-                          <TrashIcon size={13} />
-                          <span>Clear</span>
-                        </button>
-                      )}
-                    </div>
-
-                    <button
-                      type="button"
-                      className="px-5 py-2.5 rounded-xl bg-primary text-on-primary font-semibold text-sm shadow-md hover:bg-primary-hover transition-colors cursor-pointer border-0 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-primary"
-                      onClick={handleTextLoad}
-                      disabled={!textInput.trim()}
-                    >
-                      <BookOpenIcon size={16} />
-                      <span>Open in Reader</span>
-                    </button>
-                  </div>
-                  <p id="open-reader-hint" className="text-base text-muted mt-3">
-                    {textInput.trim() ? 'Ready \u2014 open the text in the reader to start listening.' : 'Paste or type text above, or use Sample Text, to enable Open in Reader.'}
-                  </p>
-                </div>
-              </div>
-            </section>
-
-            {/* HOW IT WORKS SECTION */}
-            <section
-              aria-labelledby="how-it-works-heading"
-              className="w-full pt-6 border-t border-border/70"
-            >
-              <div className="text-center max-w-2xl mx-auto mb-8">
-                <h2
-                  id="how-it-works-heading"
-                  className="font-heading text-2xl sm:text-3xl font-extrabold text-foreground"
-                >
-                  Start Listening in 3 Steps
-                </h2>
-                <p className="text-base text-muted mt-2">
-                  No account required. Files are parsed in your browser.
-                </p>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="bg-surface border border-border rounded-2xl p-6 sm:p-7 flex flex-col gap-3 shadow-xs">
-                  <div className="w-10 h-10 rounded-xl bg-primary text-on-primary font-heading font-extrabold text-lg flex items-center justify-center shrink-0 shadow-sm">
-                    1
-                  </div>
-                  <h3 className="font-heading font-bold text-lg text-foreground">
-                    Upload or Paste
-                  </h3>
-                  <p className="text-base text-muted leading-relaxed">
-                    Upload a file or paste text.
-                  </p>
-                </div>
-
-                <div className="bg-surface border border-border rounded-2xl p-6 sm:p-7 flex flex-col gap-3 shadow-xs">
-                  <div className="w-10 h-10 rounded-xl bg-primary text-on-primary font-heading font-extrabold text-lg flex items-center justify-center shrink-0 shadow-sm">
-                    2
-                  </div>
-                  <h3 className="font-heading font-bold text-lg text-foreground">
-                    Choose Voice &amp; Speed
-                  </h3>
-                  <p className="text-base text-muted leading-relaxed">
-                    Pick a voice and a speed from 0.75x to 2x.
-                  </p>
-                </div>
-
-                <div className="bg-surface border border-border rounded-2xl p-6 sm:p-7 flex flex-col gap-3 shadow-xs">
-                  <div className="w-10 h-10 rounded-xl bg-primary text-on-primary font-heading font-extrabold text-lg flex items-center justify-center shrink-0 shadow-sm">
-                    3
-                  </div>
-                  <h3 className="font-heading font-bold text-lg text-foreground">
-                    Listen &amp; Follow Along
-                  </h3>
-                  <p className="text-base text-muted leading-relaxed">
-                    Follow the highlighted sentence. Select any sentence to jump to it.
-                  </p>
-                </div>
-              </div>
-            </section>
-
-            {/* SEPARATED, ROOMY FEATURES SECTION WITH CLEAR TYPOGRAPHY */}
-            <section
-              aria-labelledby="features-heading"
-              className="w-full pt-6 border-t border-border/70"
-            >
-              <div className="text-center max-w-2xl mx-auto mb-8">
-                <h2
-                  id="features-heading"
-                  className="font-heading text-2xl sm:text-3xl font-extrabold text-foreground"
-                >
-                  Why ReadAloud
-                </h2>
-                <p className="text-base text-muted mt-2">
-                  Three things set ReadAloud apart when you listen to long documents.
-                </p>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="p-6 sm:p-7 rounded-2xl bg-surface border border-border flex flex-col gap-3 shadow-sm transition-colors hover:border-primary">
-                  <div className="w-12 h-12 rounded-xl bg-primary-subtle text-primary flex items-center justify-center">
-                    <AutoScrollIcon size={24} />
-                  </div>
-                  <h3 className="font-heading text-lg sm:text-xl font-bold text-foreground">Synchronized Highlighting</h3>
-                  <p className="text-base text-muted leading-relaxed">The spoken sentence stays highlighted. Select any sentence to start playback there, with optional auto-scroll.</p>
-                </div>
-                <div className="p-6 sm:p-7 rounded-2xl bg-surface border border-border flex flex-col gap-3 shadow-sm transition-colors hover:border-primary">
-                  <div className="w-12 h-12 rounded-xl bg-primary-subtle text-primary flex items-center justify-center">
-                    <ShieldIcon size={24} />
-                  </div>
-                  <h3 className="font-heading text-lg sm:text-xl font-bold text-foreground">Local Processing</h3>
-                  <p className="text-base text-muted leading-relaxed">Document files are parsed in your browser. Optional Kokoro audio uses only the server URL you configure.</p>
-                </div>
-                <div className="p-6 sm:p-7 rounded-2xl bg-surface border border-border flex flex-col gap-3 shadow-sm transition-colors hover:border-primary">
-                  <div className="w-12 h-12 rounded-xl bg-primary-subtle text-primary flex items-center justify-center">
-                    <VoiceIcon size={24} />
-                  </div>
-                  <h3 className="font-heading text-lg sm:text-xl font-bold text-foreground">Voice &amp; Speed Selection</h3>
-                  <p className="text-base text-muted leading-relaxed">Choose browser or system voices and listen at 0.75x to 2x. Optional high-quality voices run on a server you set up. The reader also works on phones and tablets.</p>
-                </div>
-              </div>
-            </section>
-
-            {/* FREQUENTLY ASKED QUESTIONS */}
+            {/* FAQ */}
             <section
               id="faq"
               aria-labelledby="faq-heading"
-              className="w-full pt-6 border-t border-border/70"
+              className="w-full mt-14 sm:mt-20"
             >
-              <div className="text-center max-w-2xl mx-auto mb-8">
-                <h2
-                  id="faq-heading"
-                  className="font-heading text-2xl sm:text-3xl font-extrabold text-foreground"
-                >
-                  Frequently Asked Questions
-                </h2>
-                <p className="text-base text-muted mt-2">
-                  Short answers about formats, voices and listening.
-                </p>
-              </div>
+              <h2
+                id="faq-heading"
+                className="font-heading text-xl sm:text-2xl font-extrabold text-foreground text-center"
+              >
+                Frequently asked questions
+              </h2>
 
-              <div className="max-w-3xl mx-auto flex flex-col gap-3.5">
+              <div className="mt-6 flex flex-col gap-3">
                 {faqs.map((faq, idx) => {
                   const isOpen = openFaqIndex === idx;
                   return (
                     <div
                       key={idx}
-                      className="bg-surface border border-border rounded-2xl overflow-hidden transition-colors"
+                      className={cn('faq-item rounded-2xl overflow-hidden', isOpen && 'is-open')}
                     >
                       <button
                         type="button"
                         onClick={() => toggleFaq(idx)}
-                        className="w-full p-5 sm:p-6 text-left font-heading font-bold text-base sm:text-lg text-foreground flex items-center justify-between gap-4 cursor-pointer border-0 bg-transparent hover:text-primary transition-colors"
+                        className="faq-trigger w-full p-5 sm:p-6 min-h-[44px] text-left font-heading font-bold text-sm sm:text-base text-foreground flex items-center justify-between gap-4 cursor-pointer border-0 bg-transparent transition-colors"
                         aria-expanded={isOpen}
                         aria-controls={`faq-panel-${idx}`}
                         id={`faq-button-${idx}`}
                       >
                         <span>{faq.q}</span>
-                        <span className="text-muted shrink-0">
-                          {isOpen ? <ChevronUpIcon size={18} /> : <ChevronDownIcon size={18} />}
+                        <span className={cn('faq-chevron text-muted shrink-0', isOpen && 'is-open')}>
+                          <ChevronDownIcon size={18} />
                         </span>
                       </button>
 
-                      {isOpen && (
-                        <div id={`faq-panel-${idx}`} role="region" aria-labelledby={`faq-button-${idx}`} className="px-5 pb-5 sm:px-6 sm:pb-6 text-base text-muted leading-relaxed border-t border-border/40 pt-3 animate-fade-in-fast">
+                      <div id={`faq-panel-${idx}`} role="region" aria-labelledby={`faq-button-${idx}`} className={cn('faq-answer', isOpen && 'is-open')} aria-hidden={!isOpen}>
+                        <div className="px-5 pb-5 sm:px-6 sm:pb-6 text-base text-muted leading-relaxed border-t border-border/40 pt-3">
                           {faq.a}
                         </div>
-                      )}
+                      </div>
                     </div>
                   );
                 })}
               </div>
             </section>
 
-            {/* Brand Signature Footer */}
+            {/* Footer */}
             <footer
-              className="w-full text-center text-sm text-muted py-4 border-t border-border/60"
+              className="w-full text-center text-sm text-muted mt-20 sm:mt-28 py-6"
               role="contentinfo"
             >
-              <p className="mb-2">Free PDF &amp; text to speech reader for PDF, DOCX, TXT and Markdown.</p>
-              <div className="flex items-center justify-center gap-2 flex-wrap">
-                <span>ReadAloud — Listen, Read, Follow Along. Crafted by</span>
+              <p>Free PDF &amp; text to speech reader for PDF, DOCX, TXT and Markdown.</p>
+              <p className="mt-2">
+                <span>ReadAloud, crafted by </span>
                 <a
                   href="https://github.com/imranpollob"
                   target="_blank"
@@ -650,24 +428,13 @@ export default function Home() {
                 >
                   Imran Pollob
                 </a>
-                <span className="text-muted/40">•</span>
+                <span> · </span>
                 <a href="https://github.com/imranpollob/pdf-text-to-speech-reader" target="_blank" rel="noopener noreferrer" className="text-primary font-semibold hover:underline">GitHub</a>
-                <span className="text-muted/40">•</span>
+                <span> · </span>
                 <a href="https://github.com/imranpollob/pdf-text-to-speech-reader/issues" target="_blank" rel="noopener noreferrer" className="text-primary font-semibold hover:underline">Feedback</a>
-                <span className="text-muted/40">•</span>
+                <span> · </span>
                 <a href="#faq" className="text-primary font-semibold hover:underline">Privacy</a>
-                <span className="text-muted/40">•</span>
-                <a
-                  href="https://github.com/imranpollob/pdf-text-to-speech-reader"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center justify-center text-muted hover:text-foreground transition-colors p-1 rounded-md hover:bg-navbar-control"
-                  aria-label="GitHub Open Source Repository"
-                  title="GitHub Open Source Repository"
-                >
-                  <GitHubIcon size={18} />
-                </a>
-              </div>
+              </p>
             </footer>
           </div>
         ) : (

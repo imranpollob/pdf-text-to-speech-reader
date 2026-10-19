@@ -11,9 +11,7 @@ import {
   FitWidthIcon,
   SunIcon,
   MoonIcon,
-  KeyboardIcon,
   ClockIcon,
-  CloseIcon,
 } from './Icons';
 
 export default function Header() {
@@ -36,7 +34,6 @@ export default function Header() {
   const resetFontSize = useAudioStore((s) => s.resetFontSize);
 
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
-  const [showShortcutsModal, setShowShortcutsModal] = useState(false);
 
   const hasContent = segments.length > 0 || file !== null;
 
@@ -167,7 +164,7 @@ export default function Header() {
                   <span>Back</span>
                 </button>
 
-                <div className="flex items-center gap-1 text-xs overflow-hidden">
+                <div className="flex items-baseline gap-1 text-xs overflow-hidden">
                   <span className="font-semibold whitespace-nowrap truncate max-w-[100px] sm:max-w-[140px] text-foreground">
                     {documentTitle || (file ? file.name : 'Pasted Text')}
                   </span>
@@ -282,38 +279,15 @@ export default function Header() {
                 </button>
               </div>
             ) : null}
-
-            {/* Keyboard Shortcuts Trigger */}
-            <button
-              type="button"
-              className="w-9 h-9 rounded-full inline-flex items-center justify-center bg-navbar-control border border-navbar-control-border text-foreground hover:text-primary hover:border-primary transition-colors cursor-pointer"
-              title="Keyboard shortcuts"
-              aria-label="Keyboard shortcuts"
-              onClick={() => setShowShortcutsModal(true)}
-            >
-              <KeyboardIcon size={17} />
-            </button>
-
             {/* Theme Toggle Button */}
             <button
-              className="theme-switch relative w-[54px] h-7 rounded-full border border-navbar-control-border bg-navbar-control cursor-pointer shrink-0 p-0 transition-colors duration-200"
+              className="theme-switch w-9 h-9 rounded-[10px] border border-navbar-control-border bg-navbar-control text-foreground hover:text-primary hover:border-primary inline-flex items-center justify-center cursor-pointer shrink-0 p-0 transition-colors duration-200"
               id="themeSwitch"
               aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
               type="button"
               onClick={toggleTheme}
             >
-              <SunIcon
-                size={13}
-                className="absolute top-1/2 -translate-y-1/2 text-muted left-[7px] pointer-events-none"
-              />
-              <MoonIcon
-                size={13}
-                className="absolute top-1/2 -translate-y-1/2 text-muted right-[7px] pointer-events-none"
-              />
-              <span className="thumb absolute top-0.5 left-0.5 w-[22px] h-[22px] rounded-full bg-primary text-white flex items-center justify-center transition-[left] duration-200 [transition-timing-function:cubic-bezier(0.4,0,0.2,1)]">
-                <SunIcon size={13} className="sun-icon" />
-                <MoonIcon size={13} className="moon-icon" />
-              </span>
+              {theme === 'dark' ? <MoonIcon size={17} /> : <SunIcon size={17} />}
             </button>
 
             {/* Brand tools launcher mount (replaced by the waffle button from launcher.js, which is
@@ -324,76 +298,6 @@ export default function Header() {
           </div>
         </div>
       </header>
-
-      {/* Keyboard Shortcuts Modal */}
-      {showShortcutsModal && (
-        <div
-          className="fixed inset-0 bg-black/50 z-[2000] flex items-center justify-center p-4 backdrop-blur-xs animate-fade-in-fast"
-          onClick={() => setShowShortcutsModal(false)}
-        >
-          <div
-            className="bg-surface border border-border rounded-2xl p-6 shadow-2xl w-full max-w-md animate-slide-up"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between pb-3 border-b border-border">
-              <div className="flex items-center gap-2 text-foreground font-heading font-bold text-lg">
-                <KeyboardIcon size={20} className="text-primary" />
-                <span>Keyboard Shortcuts</span>
-              </div>
-              <button
-                type="button"
-                className="text-muted hover:text-foreground bg-transparent border-0 cursor-pointer p-1"
-                onClick={() => setShowShortcutsModal(false)}
-              >
-                <CloseIcon size={18} />
-              </button>
-            </div>
-
-            <div className="flex flex-col gap-3.5 my-4">
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-muted">Play / Pause speech</span>
-                <kbd className="bg-background border border-border px-2 py-1 rounded text-xs font-mono font-semibold shadow-xs">
-                  Space
-                </kbd>
-              </div>
-
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-muted">Next sentence</span>
-                <kbd className="bg-background border border-border px-2 py-1 rounded text-xs font-mono font-semibold shadow-xs">
-                  → Right Arrow
-                </kbd>
-              </div>
-
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-muted">Previous sentence</span>
-                <kbd className="bg-background border border-border px-2 py-1 rounded text-xs font-mono font-semibold shadow-xs">
-                  ← Left Arrow
-                </kbd>
-              </div>
-
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-muted">Close menus &amp; popovers</span>
-                <kbd className="bg-background border border-border px-2 py-1 rounded text-xs font-mono font-semibold shadow-xs">
-                  Esc
-                </kbd>
-              </div>
-
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-muted">Direct sentence jump</span>
-                <span className="text-foreground text-xs font-medium">Click any sentence</span>
-              </div>
-            </div>
-
-            <button
-              type="button"
-              className="w-full py-2.5 rounded-xl bg-primary text-white font-semibold text-sm cursor-pointer border-0 hover:bg-primary-hover transition-colors"
-              onClick={() => setShowShortcutsModal(false)}
-            >
-              Got it
-            </button>
-          </div>
-        </div>
-      )}
     </>
   );
 }
